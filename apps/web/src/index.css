@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Tema claro corporativo: slate + azul (Blue-600) + verde esmeralda */
+@theme {
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Montos siempre alineados */
+.num { font-variant-numeric: tabular-nums; }
+.codigo { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+.scroll-fino { scrollbar-width: thin; scrollbar-color: var(--color-slate-300) transparent; }
+.scroll-oscuro { scrollbar-width: thin; scrollbar-color: var(--color-slate-700) transparent; }
+
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+@keyframes entrar { from { opacity: 0; transform: translateY(6px) scale(0.99); } to { opacity: 1; transform: none; } }
+.animar-entrada { animation: entrar 160ms ease-out; }
+@keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.pulso { animation: pulso 1.6s ease-in-out infinite; }
+
+/* Ticket térmico: el ancho (80/58 mm) lo inyecta el componente Ticket */
+@media print {
+  body { background: white; }
+  body * { visibility: hidden; }
+  .ticket-impresion, .ticket-impresion * { visibility: visible; }
+  .ticket-impresion { position: absolute; left: 0; top: 0; padding: 2mm 3mm; box-shadow: none !important; max-height: none !important; overflow: visible !important; }
+}

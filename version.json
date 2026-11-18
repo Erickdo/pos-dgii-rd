@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "fecha": "2026-11-18",
+  "historial": [
+    {
+      "version": "2.0.0",
+      "fecha": "2026-11-18",
+      "titulo": "Actualizaciones desde el sistema",
+      "cambios": [
+        "Nuevo: Configuración → Actualizaciones, con botón para actualizar sin descargar archivos",
+        "Respaldo automático de la base de datos y del código antes de cada actualización",
+        "Si una actualización falla, el sistema vuelve solo a la versión anterior",
+        "Rediseño completo: menú lateral con 8 módulos y tema claro corporativo",
+        "Comprobantes E44 (regímenes especiales) y E45 (gubernamental)",
+        "Notas de crédito E34, ventas a crédito y abonos, compras y kardex, reporte 607"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "fecha": "2026-11-18",
+      "titulo": "Primera versión",
+      "cambios": ["Punto de venta con e-CF firmado, contingencia y cierre de caja"]
+    }
+  ]
+}

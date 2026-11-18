@@ -1,15 +1,14 @@
-/** Firma del sistema: NexTech 360 · Creado por Erick. Aparece junto a la versión. */
-export const MARCA_SISTEMA = 'NexTech 360';
-export const AUTOR_SISTEMA = 'Erick';
-
+/** Firma de la casa, igual que en ClipSphere: «POS DGII © 2026 · Creado por Erick Nex · NexTech360». */
 export function FirmaSistema({ version, oscuro, className = '' }: { version?: string; oscuro?: boolean; className?: string }) {
+  const fuerte = oscuro ? 'text-white' : 'text-slate-900';
   return (
-    <span className={`inline-flex flex-wrap items-center gap-x-1.5 ${className}`}>
-      <span className={`font-semibold ${oscuro ? 'text-slate-300' : 'text-slate-600'}`}>
-        Nex<span className="text-blue-500">Tech</span> 360
-      </span>
-      <span>· Creado por {AUTOR_SISTEMA}</span>
-      {version && <span>· v<span className="codigo">{version}</span></span>}
+    <span className={`codigo inline-flex flex-wrap items-center gap-x-1.5 ${oscuro ? 'text-slate-500' : 'text-slate-400'} ${className}`}>
+      <span>POS DGII © {new Date().getFullYear()}</span>
+      <span>·</span>
+      <span>Creado por <b className={`font-bold ${fuerte}`}>Erick Nex</b></span>
+      <span>·</span>
+      <b className={`font-bold ${fuerte}`}>NexTech<span className={oscuro ? 'text-yellow-400' : 'text-amber-500'}>360</span></b>
+      {version && <><span>·</span><span>v{version}</span></>}
     </span>
   );
 }

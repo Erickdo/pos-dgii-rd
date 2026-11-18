@@ -1,3 +1,4 @@
+import { FirmaSistema } from '../components/Marca360';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ArrowsClockwise, CloudArrowDown, CheckCircle, Sparkle, ShieldCheck, ArrowCounterClockwise, GithubLogo, Gear, WarningCircle, CircleNotch, Info,
@@ -88,6 +89,7 @@ export default function Actualizaciones() {
             <div className="mt-0.5 text-sm text-slate-500">
               {v ? `Última revisión: ${new Date(v.verificadoEn).toLocaleString('es-DO')}` : 'Aún no se ha buscado actualizaciones'}
             </div>
+            <FirmaSistema className="mt-1 text-xs text-slate-400" />
           </div>
           <div className="flex gap-2">
             <Boton cargando={verificando} icono={<ArrowsClockwise size={18} />} onClick={verificar}>Buscar actualizaciones</Boton>

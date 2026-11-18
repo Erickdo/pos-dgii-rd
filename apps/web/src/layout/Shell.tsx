@@ -7,6 +7,7 @@ import { useApp, type Ruta } from '../contexto';
 import IndicadorDGII from '../components/IndicadorDGII';
 import { CampanaSolicitudes } from '../components/Solicitudes';
 import { LogoEmpresa } from '../screens/Login';
+import { FirmaSistema } from '../components/Marca360';
 import PuntoVenta from '../pages/PuntoVenta';
 import Ventas from '../pages/Ventas';
 import Caja from '../pages/Caja';
@@ -106,10 +107,11 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white ${colapsado ? 'justify-center' : ''}`}>
             <SidebarSimple size={20} />{!colapsado && 'Contraer menú'}
           </button>
-          {!colapsado && version && (
+          {!colapsado && (
             <button onClick={() => usuario.rol === 'administrador' && (location.hash = '/configuracion/actualizaciones')}
-              className="mt-1 w-full px-3 text-left text-[11px] text-slate-500 hover:text-slate-300">
-              Versión <span className="codigo">{version}</span>{actualizacionDisponible && <span className="text-emerald-400"> · v{actualizacionDisponible} disponible</span>}
+              className="mt-1 w-full px-3 text-left text-[11px] leading-relaxed text-slate-500 hover:text-slate-300">
+              <FirmaSistema version={version} oscuro />
+              {actualizacionDisponible && <span className="block text-emerald-400">v{actualizacionDisponible} disponible</span>}
             </button>
           )}
         </div>

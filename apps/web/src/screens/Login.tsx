@@ -5,6 +5,7 @@ import {
 } from '@phosphor-icons/react';
 import { api, ApiError, type Sesion } from '../api';
 import { Boton, Modal } from '../components/ui';
+import { FirmaSistema } from '../components/Marca360';
 
 export type ModoAcceso = 'caja' | 'administrador';
 export interface Marca { nombre: string; logo: string | null }
@@ -36,10 +37,12 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
   const [estado, setEstado] = useState<'listo' | 'cargando' | 'exito'>('listo');
   const [sacudir, setSacudir] = useState(0);
   const [solicitar, setSolicitar] = useState(false);
+  const [version, setVersion] = useState('');
   const refSecreto = useRef<HTMLInputElement>(null);
   const refUsuario = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    fetch('/api/version').then((r) => r.json()).then((v) => setVersion(v.version)).catch(() => {});
     api<Marca>('/marca').then(setMarca).catch(() => setMarca({ nombre: 'Punto de Venta', logo: null }));
     (recordado.usuario ? refSecreto : refUsuario).current?.focus();
   }, []); // eslint-disable-line
@@ -146,7 +149,10 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
             </button>
           </div>
         </div>
-        <p className="mt-5 text-center text-xs text-slate-400">Facturación electrónica DGII · e-CF</p>
+        <div className="mt-5 flex flex-col items-center gap-1 text-center text-xs text-slate-400">
+          <FirmaSistema version={version} className="justify-center" />
+          <span>Facturación electrónica DGII · e-CF</span>
+        </div>
       </div>
 
       {solicitar && <SolicitarAcceso modoInicial={modo} onCerrar={() => setSolicitar(false)} />}

@@ -30,6 +30,11 @@ button:disabled { cursor: not-allowed; }
 
 @keyframes entrar { from { opacity: 0; transform: translateY(6px) scale(0.99); } to { opacity: 1; transform: none; } }
 .animar-entrada { animation: entrar 160ms ease-out; }
+@keyframes sacudir { 10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); } 30%, 50%, 70% { transform: translateX(-7px); } 40%, 60% { transform: translateX(7px); } }
+.sacudir { animation: sacudir 420ms cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes aparecer-check { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.aparecer-check { animation: aparecer-check 260ms cubic-bezier(.34,1.56,.64,1) both; }
+@media (prefers-reduced-motion: reduce) { .sacudir, .aparecer-check, .animar-entrada { animation: none; } }
 @keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .pulso { animation: pulso 1.6s ease-in-out infinite; }
 

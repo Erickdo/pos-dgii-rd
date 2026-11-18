@@ -157,10 +157,10 @@ function ModalAnular({ venta, esAdmin, onCerrar, onListo }: { venta: VentaFila; 
           <Entrada autoFocus value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={90} placeholder="Ej.: producto defectuoso, error en el cobro" />
         </Campo>
         {!esAdmin && (
-          <Campo etiqueta="PIN de administrador" ayuda="Las anulaciones requieren autorización">
+          <Campo etiqueta="PIN o contraseña del administrador" ayuda="Las anulaciones requieren autorización">
             <div className="relative">
               <LockKey size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Entrada type="password" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} className="codigo pl-10 tracking-[0.3em]" />
+              <Entrada type="password" maxLength={60} value={pin} onChange={(e) => setPin(e.target.value)} placeholder="PIN o contraseña" className="codigo pl-10" />
             </div>
           </Campo>
         )}

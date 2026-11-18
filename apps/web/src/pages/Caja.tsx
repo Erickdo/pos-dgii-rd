@@ -130,8 +130,8 @@ function ModalMovimiento({ tipo, esAdmin, onCerrar, onListo }: { tipo: 'entrada'
           </div>
         </Campo>
         {tipo === 'salida' && !esAdmin && (
-          <Campo etiqueta="PIN de administrador" ayuda="Las salidas de efectivo requieren autorización">
-            <Entrada type="password" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} className="codigo tracking-[0.3em]" />
+          <Campo etiqueta="PIN o contraseña del administrador" ayuda="Las salidas de efectivo requieren autorización">
+            <Entrada type="password" maxLength={60} value={pin} onChange={(e) => setPin(e.target.value)} placeholder="PIN o contraseña" className="codigo" />
           </Campo>
         )}
       </div>

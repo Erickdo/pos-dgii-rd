@@ -67,9 +67,15 @@ export function requiereRol(...roles: Sesion['rol'][]) {
 }
 
 /** Verifica el PIN de cualquier administrador activo (autorización de supervisor). */
+// Freno contra adivinar el PIN del administrador desde una sesión de cajero: 5 fallos → 5 minutos sin intentos
+let fallosSupervisor = { n: 0, hasta: 0 };
 export async function pinSupervisor(pin: string): Promise<string | null> {
+  if (fallosSupervisor.hasta > Date.now()) return null;
   const { rows } = await pool.query(`SELECT id, pin_hash FROM usuarios WHERE rol = 'administrador' AND activo`);
-  return rows.find((u) => verificarSecreto(pin, u.pin_hash))?.id ?? null;
+  const id = pin ? rows.find((u) => verificarSecreto(pin, u.pin_hash))?.id ?? null : null;
+  if (id) fallosSupervisor = { n: 0, hasta: 0 };
+  else if (pin && ++fallosSupervisor.n >= 5) fallosSupervisor = { n: 0, hasta: Date.now() + 5 * 60_000 };
+  return id;
 }
 
 /** Usuario de la sesión actual (lo coloca requiereSesion). */

@@ -5,19 +5,26 @@ import { useApp } from '../contexto';
 import { Boton, Campo, Celda, EncabezadoPagina, EncabezadoTarjeta, Entrada, Insignia, Interruptor, Modal, Selector, Tabla, Tarjeta } from '../components/ui';
 import { avisar, rncValido } from '../util';
 import Actualizaciones from './Actualizaciones';
+import { EntradaSecreto, TarjetaSolicitudes, secretoValido } from '../components/Solicitudes';
+import { LogoEmpresa } from '../screens/Login';
 
 type Seccion = 'empresa' | 'usuarios' | 'impresora' | 'certificado' | 'actualizaciones';
 const SECCIONES: { id: Seccion; nombre: string; Icono: typeof Buildings }[] = [
   { id: 'empresa', nombre: 'Datos de la empresa', Icono: Buildings },
-  { id: 'usuarios', nombre: 'Usuarios y PIN', Icono: Users },
+  { id: 'usuarios', nombre: 'Usuarios y accesos', Icono: Users },
   { id: 'impresora', nombre: 'Impresora térmica', Icono: Printer },
   { id: 'certificado', nombre: 'Certificado digital', Icono: Certificate },
   { id: 'actualizaciones', nombre: 'Actualizaciones', Icono: CloudArrowDown },
 ];
 
 export default function Configuracion() {
-  const [s, setS] = useState<Seccion>(() => (location.hash.includes('actualizaciones') ? 'actualizaciones' : 'empresa'));
-  const { actualizacionDisponible } = useApp();
+  const [s, setS] = useState<Seccion>(() => (location.hash.includes('actualizaciones') ? 'actualizaciones' : location.hash.includes('usuarios') ? 'usuarios' : 'empresa'));
+  const { actualizacionDisponible, solicitudesPendientes } = useApp();
+  useEffect(() => {
+    const h = () => { if (location.hash.includes('usuarios')) setS('usuarios'); if (location.hash.includes('actualizaciones')) setS('actualizaciones'); };
+    window.addEventListener('hashchange', h);
+    return () => window.removeEventListener('hashchange', h);
+  }, []);
   return (
     <>
       <EncabezadoPagina titulo="Configuración" descripcion="Datos fiscales de la empresa, usuarios, impresora de tickets, certificado de firma y actualizaciones del sistema." />
@@ -27,12 +34,13 @@ export default function Configuracion() {
             <button key={id} onClick={() => setS(id)}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${s === id ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:bg-white/70'}`}>
               <Icono size={20} weight={s === id ? 'fill' : 'regular'} />{nombre}
+              {id === 'usuarios' && solicitudesPendientes > 0 && <span className="num ml-auto rounded-full bg-red-500 px-2 text-[11px] font-semibold text-white">{solicitudesPendientes}</span>}
               {id === 'actualizaciones' && actualizacionDisponible && <span className="ml-auto rounded-full bg-blue-600 px-2 text-[11px] font-semibold text-white">Nueva</span>}
             </button>
           ))}
         </nav>
         <div>
-          {s === 'empresa' && <Empresa />}
+          {s === 'empresa' && <div className="space-y-6"><Logo /><Empresa /></div>}
           {s === 'usuarios' && <Usuarios />}
           {s === 'impresora' && <Impresora />}
           {s === 'certificado' && <CertificadoDigital />}
@@ -43,8 +51,55 @@ export default function Configuracion() {
   );
 }
 
+function Logo() {
+  const { marca, recargarMarca } = useApp();
+  const [enviando, setEnviando] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+
+  async function guardar(logo: string | null) {
+    setEnviando(true);
+    try { await api('/admin/marca', { method: 'PUT', body: { logo } }); recargarMarca(); avisar(logo ? 'Logo actualizado' : 'Logo quitado', 'ok'); }
+    catch (e) { avisar(e instanceof ApiError ? e.message : 'Error', 'error'); }
+    finally { setEnviando(false); }
+  }
+  async function elegir(f: File | undefined) {
+    if (!f) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(f.type)) return avisar('Usa una imagen PNG, JPG o WebP', 'error');
+    // Se reduce a 256 px como máximo: basta para la pantalla de entrada y el menú, y pesa poco
+    const img = await createImageBitmap(f);
+    const k = Math.min(1, 256 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+    const datos = c.toDataURL(f.type === 'image/jpeg' ? 'image/jpeg' : 'image/png', 0.9);
+    if (datos.length > 680_000) return avisar('La imagen es muy pesada; prueba con otra', 'error');
+    guardar(datos);
+  }
+
+  return (
+    <Tarjeta>
+      <EncabezadoTarjeta titulo="Logo de la empresa" descripcion="Se muestra en la pantalla de inicio de sesión y en el menú lateral." />
+      <div className="flex flex-wrap items-center gap-5 p-5">
+        <div className="grid size-24 place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-2">
+          <LogoEmpresa marca={marca} tamano="lg" />
+        </div>
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <Boton variante="primario" icono={<UploadSimple size={17} />} cargando={enviando} onClick={() => input.current?.click()}>
+              {marca?.logo ? 'Cambiar logo' : 'Subir logo'}
+            </Boton>
+            {marca?.logo && <Boton variante="fantasma" disabled={enviando} onClick={() => guardar(null)}>Quitar</Boton>}
+          </div>
+          <p className="text-xs text-slate-500">PNG, JPG o WebP. Mejor cuadrado y con fondo blanco o transparente.</p>
+        </div>
+        <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { elegir(e.target.files?.[0]); e.target.value = ''; }} />
+      </div>
+    </Tarjeta>
+  );
+}
+
 function Empresa() {
-  const { refrescarFiscal } = useApp();
+  const { refrescarFiscal, recargarMarca } = useApp();
   const [d, setD] = useState<{ rnc: string; razonSocial: string; nombreComercial: string; direccion: string; telefono: string; correo: string; ambiente: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
   useEffect(() => {
@@ -54,7 +109,7 @@ function Empresa() {
   const rncOk = d.rnc.length === 11 || rncValido(d.rnc);
   async function guardar() {
     setEnviando(true);
-    try { await api('/admin/emisor', { method: 'PUT', body: d }); avisar('Datos de la empresa guardados', 'ok'); refrescarFiscal(); }
+    try { await api('/admin/emisor', { method: 'PUT', body: d }); avisar('Datos de la empresa guardados', 'ok'); refrescarFiscal(); recargarMarca(); }
     catch (e) { avisar(e instanceof ApiError ? e.message : 'Error', 'error'); }
     finally { setEnviando(false); }
   }
@@ -77,7 +132,7 @@ function Empresa() {
   );
 }
 
-interface UsuarioAdmin { id: string; nombre: string; usuario: string; rol: 'cajero' | 'administrador' | 'contador'; activo: boolean; ultimo_acceso: string | null }
+interface UsuarioAdmin { id: string; nombre: string; usuario: string; correo: string | null; rol: 'cajero' | 'administrador' | 'contador'; activo: boolean; ultimo_acceso: string | null }
 const ROLES = { cajero: 'Cajero', administrador: 'Administrador', contador: 'Contador' };
 
 function Usuarios() {
@@ -86,14 +141,16 @@ function Usuarios() {
   const cargar = () => api<UsuarioAdmin[]>('/admin/usuarios').then(setLista);
   useEffect(() => { cargar(); }, []);
   return (
+    <div className="space-y-6">
+    <TarjetaSolicitudes onCambio={cargar} />
     <Tarjeta>
-      <EncabezadoTarjeta titulo="Usuarios y cajeros" descripcion="Cada persona entra con su PIN de 4 dígitos"
+      <EncabezadoTarjeta titulo="Usuarios y cajeros" descripcion="Cada persona entra con su usuario o correo y su contraseña o PIN"
         accion={<Boton variante="primario" icono={<Plus size={16} />} onClick={() => setEditar('nuevo')}>Nuevo usuario</Boton>} />
       <Tabla columnas={['Nombre', 'Usuario', 'Rol', 'Último acceso', 'Estado', '']}>
         {lista.map((u) => (
           <tr key={u.id}>
             <Celda className="font-semibold">{u.nombre}</Celda>
-            <Celda className="codigo text-slate-600">{u.usuario}</Celda>
+            <Celda><span className="codigo text-slate-600">{u.usuario}</span>{u.correo && <span className="block text-xs text-slate-400">{u.correo}</span>}</Celda>
             <Celda><Insignia tono={u.rol === 'administrador' ? 'blue' : u.rol === 'contador' ? 'violet' : 'slate'}>{ROLES[u.rol]}</Insignia></Celda>
             <Celda className="num text-slate-500">{u.ultimo_acceso ?? 'Nunca'}</Celda>
             <Celda>{u.activo ? <Insignia tono="emerald" punto>Activo</Insignia> : <Insignia>Inactivo</Insignia>}</Celda>
@@ -104,15 +161,17 @@ function Usuarios() {
       <div className="grid gap-3 border-t border-slate-100 p-5 text-sm text-slate-600 md:grid-cols-3">
         <div><b className="text-slate-800">Cajero:</b> factura, su caja y su historial.</div>
         <div><b className="text-slate-800">Contador:</b> reportes, 607, clientes y monitor DGII.</div>
-        <div><b className="text-slate-800">Administrador:</b> todo, y autoriza salidas y notas de crédito con su PIN.</div>
+        <div><b className="text-slate-800">Administrador:</b> todo, y autoriza salidas y notas de crédito con su PIN o contraseña.</div>
       </div>
       {editar && <FormUsuario usuario={editar === 'nuevo' ? null : editar} onCerrar={() => setEditar(null)} onGuardado={() => { setEditar(null); cargar(); }} />}
     </Tarjeta>
+    </div>
   );
 }
 
 function FormUsuario({ usuario, onCerrar, onGuardado }: { usuario: UsuarioAdmin | null; onCerrar: () => void; onGuardado: () => void }) {
-  const [d, setD] = useState({ nombre: usuario?.nombre ?? '', usuario: usuario?.usuario ?? '', rol: usuario?.rol ?? 'cajero', pin: '', activo: usuario?.activo ?? true });
+  const [d, setD] = useState({ nombre: usuario?.nombre ?? '', usuario: usuario?.usuario ?? '', correo: usuario?.correo ?? '', rol: usuario?.rol ?? 'cajero', pin: '', activo: usuario?.activo ?? true });
+  const pinOk = d.pin ? secretoValido(d.pin) : !!usuario;
   const [enviando, setEnviando] = useState(false);
   async function guardar() {
     setEnviando(true);
@@ -126,7 +185,7 @@ function FormUsuario({ usuario, onCerrar, onGuardado }: { usuario: UsuarioAdmin 
   }
   return (
     <Modal titulo={usuario ? 'Editar usuario' : 'Nuevo usuario'} onCerrar={onCerrar}
-      pie={<><Boton onClick={onCerrar}>Cancelar</Boton><Boton variante="primario" cargando={enviando} disabled={!d.nombre || d.usuario.length < 3 || (!usuario && d.pin.length !== 4)} onClick={guardar}>Guardar</Boton></>}>
+      pie={<><Boton onClick={onCerrar}>Cancelar</Boton><Boton variante="primario" cargando={enviando} disabled={!d.nombre || d.usuario.length < 3 || !pinOk} onClick={guardar}>Guardar</Boton></>}>
       <div className="space-y-4">
         <Campo etiqueta="Nombre completo"><Entrada autoFocus value={d.nombre} onChange={(e) => setD({ ...d, nombre: e.target.value })} /></Campo>
         <div className="grid grid-cols-2 gap-3">
@@ -137,8 +196,13 @@ function FormUsuario({ usuario, onCerrar, onGuardado }: { usuario: UsuarioAdmin 
             </Selector>
           </Campo>
         </div>
-        <Campo etiqueta={usuario ? 'Nuevo PIN (opcional)' : 'PIN de 4 dígitos'} ayuda={usuario ? 'Déjalo vacío para conservar el actual' : undefined}>
-          <Entrada type="password" inputMode="numeric" maxLength={4} value={d.pin} onChange={(e) => setD({ ...d, pin: e.target.value.replace(/\D/g, '') })} className="codigo tracking-[0.5em]" />
+        <Campo etiqueta="Correo (opcional)" ayuda="También podrá entrar escribiendo su correo">
+          <Entrada type="email" value={d.correo} onChange={(e) => setD({ ...d, correo: e.target.value.trim() })} placeholder="persona@empresa.com" />
+        </Campo>
+        <Campo etiqueta={usuario ? 'Nueva contraseña o PIN (opcional)' : 'Contraseña o PIN'}
+          error={d.pin && !secretoValido(d.pin) ? 'PIN de 4 a 6 dígitos, o contraseña de 6+ caracteres con letras' : undefined}
+          ayuda={usuario ? 'Déjalo vacío para conservar la actual' : 'PIN de 4 a 6 dígitos (rápido en caja) o contraseña de 6+ caracteres'}>
+          <EntradaSecreto valor={d.pin} onChange={(v) => setD({ ...d, pin: v })} />
         </Campo>
         {usuario && <Interruptor activo={d.activo} onChange={(v) => setD({ ...d, activo: v })} etiqueta="Activo" descripcion="Los usuarios inactivos no pueden entrar" />}
       </div>

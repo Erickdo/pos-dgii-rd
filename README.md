@@ -116,7 +116,7 @@ Datos de respaldo en la venta: el XML firmado y el RFCE se guardan en la BD (`xm
 2. En PowerShell, dentro de la carpeta extraída: `Get-ChildItem -Recurse | Unblock-File` y luego `.\INSTALAR-POS.cmd`.
 3. Se abre **http://localhost:3000**. Queda el acceso directo **"Punto de Venta"** en el escritorio.
 
-Usuarios iniciales: **Administrador (PIN 1234)** y **Cajero 1 (PIN 0000)**. Cámbialos en Configuración → Usuarios.
+Usuarios iniciales: **`admin` / 1234** (pestaña Administrador) y **`cajero1` / 0000** (pestaña Caja). Cámbialos en Configuración → Usuarios y accesos. Los nuevos integrantes piden acceso desde la pantalla de entrada y el administrador los aprueba desde la campana.
 Reinstalar o actualizar **no borra datos**: el servidor aplica solo las migraciones de `database/migraciones/` al arrancar.
 
 ### Módulos (menú lateral)
@@ -130,7 +130,7 @@ Reinstalar o actualizar **no borra datos**: el servidor aplica solo las migracio
 | 5 | Clientes | todos | Directorio con **validación del dígito verificador** de RNC y cédula, límite de crédito, estado de cuenta y abonos |
 | 6 | Facturación Electrónica | todos | Monitor de e-CF (aceptados, en cola, rechazados), **sincronización manual**, XML firmado, secuencias de e-NCF |
 | 7 | Reportes y Contabilidad | admin, contador | Resumen del día, ventas por período, **cuadre de ITBIS**, más vendidos con margen, **607 en CSV** |
-| 8 | Configuración | admin | Empresa (emisor), usuarios y PIN, impresora 80/58 mm, **carga del certificado .p12** |
+| 8 | Configuración | admin | Empresa (emisor) y logo, usuarios y solicitudes de acceso, impresora 80/58 mm, **carga del certificado .p12** |
 
 Atajos: **F2** buscar · **F9** cobrar · **Enter** confirmar / nueva venta · **Ctrl+P** imprimir.
 

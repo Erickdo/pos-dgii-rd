@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Decimal } from 'decimal.js';
 import { pool, withTransaction } from '../../db.js';
 import { hashSecreto, usuarioDe } from '../../auth.js';
+import { secretoValido } from '../acceso/acceso.routes.js';
 
 const TASAS: Record<number, number> = { 1: 0.18, 2: 0.16, 3: 0, 4: 0 };
 const monto = z.coerce.number().min(0).max(1e12);
@@ -13,6 +14,7 @@ function errorPg(e: any, res: any, next: any) {
     ux_productos_barras: 'Ya existe un producto con ese código de barras',
     categorias_nombre_key: 'Ya existe esa categoría',
     usuarios_usuario_key: 'Ese nombre de usuario ya existe',
+    ux_usuarios_correo: 'Ya existe un usuario con ese correo',
     ux_secuencia_activa: 'Ya hay una secuencia activa para ese comprobante',
     chk_stock_no_negativo: 'El stock no puede quedar negativo',
     chk_ident: 'Identificación inválida (RNC 9 dígitos, cédula 11)',
@@ -122,7 +124,7 @@ export function adminRouter() {
   r.get('/admin/usuarios', async (_req, res, next) => {
     try {
       res.json((await pool.query(
-        `SELECT id, nombre, usuario, rol, activo, to_char(ultimo_acceso, 'DD-MM-YYYY HH24:MI') AS ultimo_acceso
+        `SELECT id, nombre, usuario, correo, rol, activo, to_char(ultimo_acceso, 'DD-MM-YYYY HH24:MI') AS ultimo_acceso
            FROM usuarios ORDER BY activo DESC, rol, nombre`)).rows);
     } catch (e) { next(e); }
   });
@@ -131,19 +133,20 @@ export function adminRouter() {
     nombre: z.string().trim().min(2).max(100),
     usuario: z.string().trim().min(3).max(50).regex(/^[a-z0-9._-]+$/i, 'solo letras, números, punto o guion'),
     rol: z.enum(['cajero', 'administrador', 'contador']),
-    pin: z.string().regex(/^\d{4}$/, 'el PIN debe tener 4 dígitos').optional().or(z.literal('')),
+    correo: z.string().trim().email('correo inválido').max(120).optional().or(z.literal('')),
+    pin: z.string().refine(secretoValido, 'usa un PIN de 4 a 6 dígitos o una contraseña de 6+ caracteres con letras').optional().or(z.literal('')),
     activo: z.boolean().default(true),
   });
 
   r.post('/admin/usuarios', async (req, res, next) => {
     const p = UsuarioSchema.safeParse(req.body);
     if (!p.success) return invalido(res, p.error);
-    if (!p.data.pin) return res.status(400).json({ error: 'VALIDACION', mensaje: 'Asigna un PIN de 4 dígitos' });
+    if (!p.data.pin) return res.status(400).json({ error: 'VALIDACION', mensaje: 'Asigna un PIN o una contraseña' });
     try {
       const h = hashSecreto(p.data.pin);
       const { rows } = await pool.query(
-        `INSERT INTO usuarios (nombre, usuario, password_hash, pin_hash, rol, activo) VALUES ($1,$2,$3,$3,$4,$5) RETURNING id`,
-        [p.data.nombre, p.data.usuario.toLowerCase(), h, p.data.rol, p.data.activo]);
+        `INSERT INTO usuarios (nombre, usuario, password_hash, pin_hash, rol, activo, correo) VALUES ($1,$2,$3,$3,$4,$5,$6) RETURNING id`,
+        [p.data.nombre, p.data.usuario.toLowerCase(), h, p.data.rol, p.data.activo, p.data.correo ? p.data.correo.toLowerCase() : null]);
       res.status(201).json(rows[0]);
     } catch (e) { errorPg(e, res, next); }
   });
@@ -157,8 +160,8 @@ export function adminRouter() {
     }
     try {
       await pool.query(
-        `UPDATE usuarios SET nombre=$2, usuario=$3, rol=$4, activo=$5 ${p.data.pin ? ', pin_hash=$6, password_hash=$6' : ''} WHERE id=$1`,
-        [req.params.id, p.data.nombre, p.data.usuario.toLowerCase(), p.data.rol, p.data.activo, ...(p.data.pin ? [hashSecreto(p.data.pin)] : [])]);
+        `UPDATE usuarios SET nombre=$2, usuario=$3, rol=$4, activo=$5, correo=$6 ${p.data.pin ? ', pin_hash=$7, password_hash=$7' : ''} WHERE id=$1`,
+        [req.params.id, p.data.nombre, p.data.usuario.toLowerCase(), p.data.rol, p.data.activo, p.data.correo ? p.data.correo.toLowerCase() : null, ...(p.data.pin ? [hashSecreto(p.data.pin)] : [])]);
       res.json({ ok: true });
     } catch (e) { errorPg(e, res, next); }
   });

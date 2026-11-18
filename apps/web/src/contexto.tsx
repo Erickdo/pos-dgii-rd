@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { Marca } from './screens/Login';
 import { api, type Caja, type ConfigImpresora, type EstadoFiscal, type Usuario } from './api';
 
 interface Ctx {
@@ -13,6 +14,10 @@ interface Ctx {
   ir: (ruta: Ruta) => void;
   actualizacionDisponible: string | null;   // versión nueva disponible (solo administradores)
   version: string;
+  marca: Marca | null;
+  recargarMarca: () => void;
+  solicitudesPendientes: number;
+  recargarSolicitudes: () => void;
 }
 
 export type Ruta = 'pos' | 'ventas' | 'caja' | 'inventario' | 'clientes' | 'fiscal' | 'reportes' | 'configuracion';
@@ -28,6 +33,13 @@ export function ProveedorApp({ usuario, salir, ir, children }: { usuario: Usuari
   const [impresora, setImpresora] = useState<ConfigImpresora>(IMPRESORA_DEFECTO);
   const [actualizacionDisponible, setActualizacion] = useState<string | null>(null);
   const [version, setVersion] = useState('');
+  const [marca, setMarca] = useState<Marca | null>(null);
+  const [solicitudesPendientes, setSolicitudes] = useState(0);
+  const recargarMarca = useCallback(() => { api<Marca>('/marca').then(setMarca).catch(() => {}); }, []);
+  const recargarSolicitudes = useCallback(() => {
+    if (usuario.rol !== 'administrador') return;
+    api<{ pendientes: number }>('/admin/solicitudes/conteo').then((r) => setSolicitudes(r.pendientes)).catch(() => {});
+  }, [usuario.rol]);
 
   const recargarCaja = useCallback(async () => {
     try { setCaja(await api<Caja | null>('/cajas/actual')); } catch { setCaja(null); }
@@ -38,7 +50,7 @@ export function ProveedorApp({ usuario, salir, ir, children }: { usuario: Usuari
   }, []);
 
   useEffect(() => {
-    recargarCaja(); refrescarFiscal(); recargarConfig();
+    recargarCaja(); refrescarFiscal(); recargarConfig(); recargarMarca(); recargarSolicitudes();
     fetch('/api/version').then((r) => r.json()).then((v) => setVersion(v.version)).catch(() => {});
     const revisarActualizacion = () => {
       if (usuario.rol !== 'administrador') return;
@@ -48,11 +60,12 @@ export function ProveedorApp({ usuario, salir, ir, children }: { usuario: Usuari
     revisarActualizacion();
     const t = setInterval(refrescarFiscal, 20_000);
     const t2 = setInterval(revisarActualizacion, 10 * 60_000);
-    return () => { clearInterval(t); clearInterval(t2); };
-  }, [recargarCaja, refrescarFiscal, recargarConfig, usuario.rol]);
+    const t3 = setInterval(recargarSolicitudes, 30_000);
+    return () => { clearInterval(t); clearInterval(t2); clearInterval(t3); };
+  }, [recargarCaja, refrescarFiscal, recargarConfig, recargarMarca, recargarSolicitudes, usuario.rol]);
 
   return (
-    <AppCtx.Provider value={{ usuario, caja, recargarCaja, fiscal, refrescarFiscal, impresora, recargarConfig, salir, ir, actualizacionDisponible, version }}>
+    <AppCtx.Provider value={{ usuario, caja, recargarCaja, fiscal, refrescarFiscal, impresora, recargarConfig, salir, ir, actualizacionDisponible, version, marca, recargarMarca, solicitudesPendientes, recargarSolicitudes }}>
       {children}
     </AppCtx.Provider>
   );

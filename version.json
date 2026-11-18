@@ -1,7 +1,19 @@
 {
-  "version": "2.0.1",
+  "version": "2.1.0",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.1.0",
+      "fecha": "2026-11-18",
+      "titulo": "Nueva pantalla de inicio de sesión",
+      "cambios": [
+        "Inicio de sesión centrado con el logo y el nombre de tu empresa, y pestañas Caja / Administrador",
+        "Se entra con usuario o correo y contraseña o PIN; ya no se muestra la lista de usuarios",
+        "«Solicitar acceso» para nuevos integrantes; el administrador los aprueba desde la campana",
+        "Logo de la empresa configurable en Configuración → Datos de la empresa",
+        "Bloqueo de 5 minutos tras 5 intentos fallidos"
+      ]
+    },
     {
       "version": "2.0.1",
       "fecha": "2026-11-18",

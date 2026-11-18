@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import {
   ShoppingCart, Receipt, CashRegister, Package, AddressBook, CloudCheck, ChartBar, GearSix,
-  SidebarSimple, SignOut, CaretDown, Storefront, type IconProps,
+  SidebarSimple, SignOut, CaretDown, type IconProps,
 } from '@phosphor-icons/react';
 import { useApp, type Ruta } from '../contexto';
 import IndicadorDGII from '../components/IndicadorDGII';
+import { CampanaSolicitudes } from '../components/Solicitudes';
+import { LogoEmpresa } from '../screens/Login';
 import PuntoVenta from '../pages/PuntoVenta';
 import Ventas from '../pages/Ventas';
 import Caja from '../pages/Caja';
@@ -29,7 +31,7 @@ export const MODULOS: { id: Ruta; nombre: string; corto: string; Icono: Componen
 const ROLES: Record<Rol, string> = { cajero: 'Cajero', administrador: 'Administrador', contador: 'Contador' };
 
 export default function Shell({ ruta }: { ruta: Ruta }) {
-  const { usuario, caja, ir, salir, fiscal, actualizacionDisponible, version } = useApp();
+  const { usuario, caja, ir, salir, fiscal, actualizacionDisponible, version, marca } = useApp();
   const [colapsado, setColapsado] = useState(() => { try { return localStorage.getItem('pos.sidebar') === '1'; } catch { return false; } });
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -44,7 +46,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  const negocio = fiscal?.emisor?.nombre_comercial ?? fiscal?.emisor?.razon_social ?? 'Punto de Venta';
+  const negocio = marca?.nombre ?? fiscal?.emisor?.nombre_comercial ?? fiscal?.emisor?.razon_social ?? 'Punto de Venta';
   const iniciales = usuario.nombre.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   const esPOS = actual.id === 'pos';
 
@@ -53,7 +55,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
       {/* ------------------------------------------------ barra lateral */}
       <aside className={`flex shrink-0 flex-col bg-slate-900 text-slate-300 transition-[width] duration-200 ${colapsado ? 'w-[72px]' : 'w-64'}`}>
         <div className={`flex h-16 items-center gap-3 border-b border-slate-800 ${colapsado ? 'justify-center px-0' : 'px-5'}`}>
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-blue-600 text-white"><Storefront size={20} weight="fill" /></span>
+          <LogoEmpresa marca={marca} tamano="sm" />
           {!colapsado && (
             <div className="min-w-0 leading-tight">
               <div className="truncate text-sm font-semibold text-white">{negocio}</div>
@@ -123,6 +125,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
             </div>
           </div>
           <IndicadorDGII />
+          {usuario.rol === 'administrador' && <CampanaSolicitudes />}
           <div ref={menuRef} className="relative">
             <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2.5 hover:bg-slate-100">
               <span className="grid size-8 place-items-center rounded-full bg-slate-900 text-xs font-semibold text-white">{iniciales}</span>

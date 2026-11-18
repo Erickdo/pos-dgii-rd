@@ -1,7 +1,16 @@
 {
-  "version": "2.0.0",
+  "version": "2.0.1",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.0.1",
+      "fecha": "2026-11-18",
+      "titulo": "Arranque más seguro",
+      "cambios": [
+        "Si una pantalla falla, se muestra un mensaje con la solución en vez de quedar en blanco",
+        "El acceso directo apaga automáticamente un servidor de una versión anterior que siga encendido"
+      ]
+    },
     {
       "version": "2.0.0",
       "fecha": "2026-11-18",
@@ -19,7 +28,9 @@
       "version": "1.0.0",
       "fecha": "2026-11-18",
       "titulo": "Primera versión",
-      "cambios": ["Punto de venta con e-CF firmado, contingencia y cierre de caja"]
+      "cambios": [
+        "Punto de venta con e-CF firmado, contingencia y cierre de caja"
+      ]
     }
   ]
 }

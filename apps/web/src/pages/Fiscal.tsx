@@ -39,10 +39,10 @@ export default function Fiscal() {
     finally { setSincronizando(false); }
   }
 
-  if (!fiscal) return null;
+  if (!fiscal?.cola) return null;
   const c = fiscal.cola;
   const horas = c.limite_mas_proximo ? Math.max(0, Math.round((new Date(c.limite_mas_proximo).getTime() - Date.now()) / 3_600_000)) : null;
-  const errorTipo = fiscal.worker.ultimoTipoError;
+  const errorTipo = fiscal.worker?.ultimoTipoError;
 
   return (
     <>
@@ -64,11 +64,11 @@ export default function Fiscal() {
             {c.pendientes > 0 && (errorTipo === 'red' ? 'No hay conexión con la DGII. Las ventas siguen emitiéndose firmadas y se envían automáticamente al volver el internet. '
               : errorTipo === 'autenticacion' ? 'La DGII rechazó la autenticación. Verifica que el certificado esté registrado en la Oficina Virtual. ' : '')}
             {horas !== null && <>Plazo del más antiguo: <b>{horas} h</b> de 72 h. </>}
-            {fiscal.worker.ultimoExito && <>Último contacto exitoso: {new Date(fiscal.worker.ultimoExito).toLocaleString('es-DO')}.</>}
+            {fiscal.worker?.ultimoExito && <>Último contacto exitoso: {new Date(fiscal.worker.ultimoExito).toLocaleString('es-DO')}.</>}
           </div>
         </div>
       </div>
-      {fiscal.certificado.esPrueba && (
+      {(fiscal.certificado?.esPrueba ?? fiscal.certificadoPrueba) && (
         <div className="mb-6 flex items-center gap-3 rounded-xl bg-white p-4 text-sm ring-1 ring-amber-200">
           <ShieldWarning size={24} className="text-amber-600" />
           <span className="flex-1">Estás firmando con un <b>certificado de prueba</b>. La DGII no aceptará estos comprobantes. Carga tu certificado en <b>Configuración → Certificado digital</b>.</span>

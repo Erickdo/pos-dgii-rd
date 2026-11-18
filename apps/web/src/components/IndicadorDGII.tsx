@@ -3,9 +3,9 @@ import { useApp } from '../contexto';
 /** Punto verde "DGII en línea" · ámbar "Modo contingencia: X pendientes" · rojo si hay rechazos. */
 export default function IndicadorDGII() {
   const { fiscal, ir } = useApp();
-  if (!fiscal) return null;
+  if (!fiscal?.cola) return null;
   const { pendientes, rechazados } = fiscal.cola;
-  const sinRed = fiscal.worker.ultimoTipoError === 'red';
+  const sinRed = fiscal.worker?.ultimoTipoError === 'red';
 
   let color = 'bg-emerald-500', fondo = 'bg-emerald-50 text-emerald-800 ring-emerald-200', texto = 'DGII en línea';
   if (rechazados) { color = 'bg-red-500'; fondo = 'bg-red-50 text-red-800 ring-red-200'; texto = `${rechazados} rechazado${rechazados > 1 ? 's' : ''} por la DGII`; }

@@ -6,9 +6,13 @@ import {
 import { api, ApiError, type Sesion } from '../api';
 import { Boton, Modal } from '../components/ui';
 import { FirmaSistema } from '../components/Marca360';
+import { EnlacesLegales } from '../components/Legal';
 
 export type ModoAcceso = 'caja' | 'administrador';
-export interface Marca { nombre: string; logo: string | null }
+export interface Marca {
+  nombre: string; logo: string | null;
+  razonSocial?: string | null; rnc?: string | null; direccion?: string | null; telefono?: string | null; correo?: string | null;
+}
 
 const RECORDAR = 'pos.ultimoAcceso';
 function leerRecordado(): { usuario: string; modo: ModoAcceso } {
@@ -37,10 +41,12 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
   const [estado, setEstado] = useState<'listo' | 'cargando' | 'exito'>('listo');
   const [sacudir, setSacudir] = useState(0);
   const [solicitar, setSolicitar] = useState(false);
+  const [version, setVersion] = useState('');
   const refSecreto = useRef<HTMLInputElement>(null);
   const refUsuario = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    fetch('/api/version').then((r) => r.json()).then((v) => setVersion(v.version)).catch(() => {});
     api<Marca>('/marca').then(setMarca).catch(() => setMarca({ nombre: 'Punto de Venta', logo: null }));
     (recordado.usuario ? refSecreto : refUsuario).current?.focus();
   }, []); // eslint-disable-line
@@ -139,7 +145,8 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
         </div>
       </main>
 
-      <footer className="flex justify-center pb-4 text-center text-xs">
+      <footer className="flex flex-col items-center gap-1.5 pb-4 text-center text-xs">
+        <EnlacesLegales marca={marca} version={version} />
         <FirmaSistema className="justify-center" />
       </footer>
 

@@ -129,7 +129,7 @@ export function Modal({ titulo, descripcion, onCerrar, children, ancho = 'max-w-
   }, [onCerrar]);
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-[2px]" onMouseDown={onCerrar}>
-      <div onMouseDown={(e) => e.stopPropagation()} className={`animar-entrada flex max-h-[92vh] w-full ${ancho} flex-col overflow-hidden rounded-2xl bg-white shadow-2xl`}>
+      <div onMouseDown={(e) => e.stopPropagation()} className={`animar-entrada flex max-h-[92vh] w-full ${ancho} flex-col overflow-hidden rounded-2xl bg-white text-left shadow-2xl`}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">{titulo}</h2>

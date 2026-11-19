@@ -1,7 +1,16 @@
 {
-  "version": "2.2.5",
+  "version": "2.3.0",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.3.0",
+      "fecha": "2026-11-18",
+      "titulo": "Términos, privacidad y Acerca de",
+      "cambios": [
+        "Enlaces al pie del login: Términos de uso, Política de privacidad (Ley 172-13) y Acerca de",
+        "Los documentos usan automáticamente el nombre, RNC y contacto de tu empresa"
+      ]
+    },
     {
       "version": "2.2.5",
       "fecha": "2026-11-18",

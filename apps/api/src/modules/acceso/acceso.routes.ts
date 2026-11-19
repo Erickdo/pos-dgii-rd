@@ -25,9 +25,14 @@ export function accesoRouter() {
   // ------------------------------------------------------------ marca (pública)
   r.get('/marca', async (_req, res, next) => {
     try {
-      const e = (await pool.query(`SELECT razon_social, nombre_comercial FROM emisor LIMIT 1`)).rows[0];
+      const e = (await pool.query(`SELECT rnc, razon_social, nombre_comercial, direccion, telefono, correo FROM emisor LIMIT 1`)).rows[0];
       const m = (await pool.query(`SELECT valor FROM configuracion WHERE clave = 'marca'`)).rows[0]?.valor ?? {};
-      res.json({ nombre: e?.nombre_comercial || e?.razon_social || 'Punto de Venta', logo: m.logo ?? null });
+      // Datos públicos del negocio (los mismos que salen en cada factura), para las páginas legales del login
+      res.json({
+        nombre: e?.nombre_comercial || e?.razon_social || 'Punto de Venta', logo: m.logo ?? null,
+        razonSocial: e?.razon_social ?? null, rnc: e?.rnc ?? null, direccion: e?.direccion ?? null,
+        telefono: e?.telefono ?? null, correo: e?.correo ?? null,
+      });
     } catch (e) { next(e); }
   });
 

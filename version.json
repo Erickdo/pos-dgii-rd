@@ -1,7 +1,17 @@
 {
-  "version": "2.3.2",
+  "version": "2.3.3",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.3.3",
+      "fecha": "2026-11-19",
+      "titulo": "Logo grande en el login",
+      "cambios": [
+        "El logo se recorta solo: se quita el margen blanco o transparente que lo rodeaba y se ve grande",
+        "También se corrige el logo que ya tenías guardado, sin volver a subirlo",
+        "Los logos nuevos se guardan con más resolución (hasta 640 px) para que se vean nítidos"
+      ]
+    },
     {
       "version": "2.3.2",
       "fecha": "2026-11-18",

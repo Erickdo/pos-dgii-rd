@@ -7,6 +7,7 @@ import { avisar, rncValido } from '../util';
 import Actualizaciones from './Actualizaciones';
 import { EntradaSecreto, TarjetaSolicitudes, secretoValido } from '../components/Solicitudes';
 import { LogoEmpresa } from '../screens/Login';
+import { recortarLogo } from '../logo';
 
 type Seccion = 'empresa' | 'usuarios' | 'impresora' | 'certificado' | 'actualizaciones';
 const SECCIONES: { id: Seccion; nombre: string; Icono: typeof Buildings }[] = [
@@ -65,13 +66,9 @@ function Logo() {
   async function elegir(f: File | undefined) {
     if (!f) return;
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(f.type)) return avisar('Usa una imagen PNG, JPG o WebP', 'error');
-    // Se reduce a 256 px como máximo: basta para la pantalla de entrada y el menú, y pesa poco
-    const img = await createImageBitmap(f);
-    const k = Math.min(1, 256 / Math.max(img.width, img.height));
-    const c = document.createElement('canvas');
-    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
-    const datos = c.toDataURL(f.type === 'image/jpeg' ? 'image/jpeg' : 'image/png', 0.9);
+    // Se recorta el margen blanco o transparente y se guarda hasta 640 px: nítido y liviano
+    let datos = await recortarLogo(f, 640);
+    if (datos.length > 680_000) datos = await recortarLogo(f, 400);
     if (datos.length > 680_000) return avisar('La imagen es muy pesada; prueba con otra', 'error');
     guardar(datos);
   }
@@ -90,7 +87,7 @@ function Logo() {
             </Boton>
             {marca?.logo && <Boton variante="fantasma" disabled={enviando} onClick={() => guardar(null)}>Quitar</Boton>}
           </div>
-          <p className="text-xs text-slate-500">PNG, JPG o WebP. Mejor cuadrado y con fondo blanco o transparente.</p>
+          <p className="text-xs text-slate-500">PNG, JPG o WebP. Los márgenes en blanco se recortan solos.</p>
         </div>
         <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { elegir(e.target.files?.[0]); e.target.value = ''; }} />
       </div>

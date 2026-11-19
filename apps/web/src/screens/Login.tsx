@@ -7,6 +7,7 @@ import { api, ApiError, type Sesion } from '../api';
 import { Boton, Modal } from '../components/ui';
 import { FirmaSistema } from '../components/Marca360';
 import { EnlacesLegales } from '../components/Legal';
+import { logoRecortado } from '../logo';
 
 export interface Marca {
   nombre: string; logo: string | null;
@@ -20,10 +21,18 @@ function leerRecordado(): { usuario: string } {
 
 /** Logo de la empresa (se ajusta por alto, así los logos anchos no se encogen), o un ícono si no hay. */
 export function LogoEmpresa({ marca, tamano = 'md' }: { marca: Marca | null; tamano?: 'sm' | 'md' | 'lg' | 'login' }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!marca?.logo) { setSrc(null); return; }
+    let vivo = true;
+    logoRecortado(marca.logo).then((s) => { if (vivo) setSrc(s); });
+    return () => { vivo = false; };
+  }, [marca?.logo]);
   if (marca?.logo) {
-    const img = { sm: 'h-7 max-w-[110px]', md: 'h-12 max-w-[180px]', lg: 'h-16 max-w-[220px]', login: 'h-[72px] max-w-[260px]' }[tamano];
+    if (!src) return <span className={tamano === 'login' ? 'h-24 w-40' : tamano === 'sm' ? 'h-9 w-20' : 'h-14 w-24'} />;
+    const img = { sm: 'h-7 max-w-[120px]', md: 'h-12 max-w-[180px]', lg: 'h-16 max-w-[220px]', login: 'h-20 max-w-[280px]' }[tamano];
     const marco = tamano === 'sm' ? 'rounded-lg bg-white px-1.5 py-1' : '';
-    return <span className={`inline-flex shrink-0 items-center justify-center ${marco}`}><img src={marca.logo} alt={marca.nombre} className={`${img} w-auto object-contain`} /></span>;
+    return <span className={`inline-flex shrink-0 items-center justify-center ${marco}`}><img src={src} alt={marca.nombre} className={`${img} w-auto object-contain`} /></span>;
   }
   const caja = { sm: 'size-9 rounded-lg', md: 'size-14 rounded-xl', lg: 'size-20 rounded-2xl', login: 'size-16 rounded-2xl' }[tamano];
   return (
@@ -91,12 +100,12 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion) => void }) {
 
       <main className="flex flex-1 items-center justify-center py-6">
         <div key={sacudir} className={`w-full max-w-[400px] ${sacudir ? 'sacudir' : ''}`}>
-          <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 px-7 pb-6 pt-8 shadow-[0_1px_2px_rgba(15,23,42,.05),0_24px_48px_-16px_rgba(15,23,42,.18)] ring-1 ring-slate-900/5 backdrop-blur sm:px-9">
+          <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white px-7 pb-6 pt-8 shadow-[0_1px_2px_rgba(15,23,42,.05),0_24px_48px_-16px_rgba(15,23,42,.18)] ring-1 ring-slate-900/5 sm:px-9">
             <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-500" />
 
             {/* marca */}
             <div className="flex flex-col items-center text-center">
-              <div className="flex h-[72px] items-center justify-center">
+              <div className="flex min-h-[72px] items-center justify-center">
                 {marca ? <LogoEmpresa marca={marca} tamano="login" /> : <span className="size-16 animate-pulse rounded-2xl bg-slate-100" />}
               </div>
               <h1 className="mt-4 text-xl font-bold leading-tight tracking-tight text-slate-900">{marca?.nombre ?? '\u00a0'}</h1>

@@ -1,7 +1,15 @@
 {
-  "version": "2.2.0",
+  "version": "2.2.1",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.2.1",
+      "fecha": "2026-11-18",
+      "titulo": "Firma con los colores de la casa",
+      "cambios": [
+        "La firma Creado por Erick Nex · NexTech360 usa los mismos colores que ClipSphere: fondo oscuro, blanco y 360 en amarillo"
+      ]
+    },
     {
       "version": "2.2.0",
       "fecha": "2026-11-18",

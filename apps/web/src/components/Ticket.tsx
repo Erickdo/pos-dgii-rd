@@ -119,7 +119,7 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
             {Number(v.monto_gravado_i3) > 0 && <Fila k="Gravado 0%" v={num(v.monto_gravado_i3)} />}
             {Number(v.total_itbis1) > 0 && <Fila k="ITBIS 18%" v={num(v.total_itbis1)} />}
             {Number(v.total_itbis2) > 0 && <Fila k="ITBIS 16%" v={num(v.total_itbis2)} />}
-            <div className="t-banda t-grande mt-1.5 flex justify-between !text-left"><span>TOTAL RD$</span><span>{num(v.monto_total)}</span></div>
+            <div className="t-banda t-total t-grande mt-1.5 flex justify-between !text-left"><span>TOTAL RD$</span><span>{num(v.monto_total)}</span></div>
 
             {/* ───────── 7. pago */}
             <Seccion titulo="Forma de pago" />

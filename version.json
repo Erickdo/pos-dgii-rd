@@ -1,7 +1,15 @@
 {
-  "version": "2.5.2",
+  "version": "2.5.3",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.5.3",
+      "fecha": "2026-11-19",
+      "titulo": "Factura sin franjas negras",
+      "cambios": [
+        "El tipo de comprobante va en negrita entre dos líneas y el TOTAL entre líneas dobles, sin fondo negro"
+      ]
+    },
     {
       "version": "2.5.2",
       "fecha": "2026-11-19",

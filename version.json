@@ -1,7 +1,16 @@
 {
-  "version": "2.5.0",
+  "version": "2.5.1",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.5.1",
+      "fecha": "2026-11-19",
+      "titulo": "Ticket con letra Courier",
+      "cambios": [
+        "El ticket usa Courier, la letra común de facturas y tickets, con negrita real",
+        "Tamaños ajustados para 80 mm y 58 mm sin cortar columnas"
+      ]
+    },
     {
       "version": "2.5.0",
       "fecha": "2026-11-19",

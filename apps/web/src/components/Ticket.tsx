@@ -4,7 +4,6 @@ import { Printer, ArrowRight, CheckCircle } from '@phosphor-icons/react';
 import { api } from '../api';
 import { useApp } from '../contexto';
 import { num } from '../util';
-import '@fontsource/share-tech-mono/400.css';
 import '@fontsource/courier-prime/400.css';
 import '@fontsource/courier-prime/700.css';
 import { Boton } from './ui';
@@ -50,7 +49,7 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
 
   const v = d?.venta;
   // columnas del detalle: CANT. | DESCRIPCIÓN | ITBIS | VALOR
-  const cols = angosto ? 'grid-cols-[5ch_1fr_7ch_8.5ch]' : 'grid-cols-[5.5ch_1fr_8.5ch_10.5ch]';
+  const cols = angosto ? 'grid-cols-[5ch_1fr_6.5ch_8.5ch]' : 'grid-cols-[5.5ch_1fr_8.5ch_10.5ch]';
   const subtotal = v ? Number(v.monto_gravado_i1) + Number(v.monto_gravado_i2) + Number(v.monto_gravado_i3) + Number(v.monto_exento) : 0;
   return (
     <div data-modal="" className="fixed inset-0 z-50 flex items-center justify-center gap-8 bg-slate-900/60 p-6 backdrop-blur-[2px]">

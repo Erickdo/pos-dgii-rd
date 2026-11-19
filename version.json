@@ -1,7 +1,15 @@
 {
-  "version": "2.4.1",
+  "version": "2.4.2",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.4.2",
+      "fecha": "2026-11-19",
+      "titulo": "Ticket sin arroba",
+      "cambios": [
+        "Se quita la @ delante del precio unitario en la descripción de cada producto"
+      ]
+    },
     {
       "version": "2.4.1",
       "fecha": "2026-11-19",

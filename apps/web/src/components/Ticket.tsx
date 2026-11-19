@@ -101,7 +101,7 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
                 </div>
                 <div className={`t-chico grid ${cols} gap-x-1 text-neutral-700`}>
                   <span />
-                  <span>@ {num(it.precio_unitario)}{it.indicador_itbis === 2 ? ' · ITBIS 16%' : it.indicador_itbis === 4 ? ' · Exento' : ''}</span>
+                  <span>{num(it.precio_unitario)}{it.indicador_itbis === 2 ? ' · ITBIS 16%' : it.indicador_itbis === 4 ? ' · Exento' : ''}</span>
                   <span />
                   <span className="text-right">{Number(it.descuento_monto) > 0 ? `-${num(it.descuento_monto)}` : ''}</span>
                 </div>

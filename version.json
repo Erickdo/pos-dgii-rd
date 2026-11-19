@@ -1,7 +1,16 @@
 {
-  "version": "2.3.3",
+  "version": "2.3.4",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.3.4",
+      "fecha": "2026-11-19",
+      "titulo": "Logo en alta calidad",
+      "cambios": [
+        "El logo se guarda en PNG hasta 1024 px (antes se reducía a 256 px y se comprimía)",
+        "Aviso en Configuración cuando el logo guardado está en baja calidad, para subir el original"
+      ]
+    },
     {
       "version": "2.3.3",
       "fecha": "2026-11-19",

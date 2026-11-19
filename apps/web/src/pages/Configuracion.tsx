@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Buildings, Users, Printer, Certificate, CloudArrowDown, Plus, PencilSimple, UploadSimple, ShieldCheck, ShieldWarning, Info } from '@phosphor-icons/react';
+import { Buildings, Users, Printer, Certificate, CloudArrowDown, Plus, PencilSimple, UploadSimple, ShieldCheck, ShieldWarning, Info, WarningCircle } from '@phosphor-icons/react';
 import { api, ApiError, type ConfigImpresora } from '../api';
 import { useApp } from '../contexto';
 import { Boton, Campo, Celda, EncabezadoPagina, EncabezadoTarjeta, Entrada, Insignia, Interruptor, Modal, Selector, Tabla, Tarjeta } from '../components/ui';
@@ -7,7 +7,7 @@ import { avisar, rncValido } from '../util';
 import Actualizaciones from './Actualizaciones';
 import { EntradaSecreto, TarjetaSolicitudes, secretoValido } from '../components/Solicitudes';
 import { LogoEmpresa } from '../screens/Login';
-import { recortarLogo } from '../logo';
+import { logoRecortado, recortarLogo } from '../logo';
 
 type Seccion = 'empresa' | 'usuarios' | 'impresora' | 'certificado' | 'actualizaciones';
 const SECCIONES: { id: Seccion; nombre: string; Icono: typeof Buildings }[] = [
@@ -56,6 +56,14 @@ function Logo() {
   const { marca, recargarMarca } = useApp();
   const [enviando, setEnviando] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const [calidad, setCalidad] = useState<{ w: number; h: number; jpg: boolean } | null>(null);
+  useEffect(() => {
+    if (!marca?.logo) { setCalidad(null); return; }
+    const jpg = marca.logo.startsWith('data:image/jpeg');
+    logoRecortado(marca.logo).then((src) => { const i = new Image(); i.onload = () => setCalidad({ w: i.naturalWidth, h: i.naturalHeight, jpg }); i.src = src; });
+  }, [marca?.logo]);
+  // En el login el logo se muestra a 80 px de alto; en pantallas con zoom hace falta el doble de píxeles
+  const bajaCalidad = calidad && (calidad.h < 160 || calidad.jpg);
 
   async function guardar(logo: string | null) {
     setEnviando(true);
@@ -66,10 +74,10 @@ function Logo() {
   async function elegir(f: File | undefined) {
     if (!f) return;
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(f.type)) return avisar('Usa una imagen PNG, JPG o WebP', 'error');
-    // Se recorta el margen blanco o transparente y se guarda hasta 640 px: nítido y liviano
-    let datos = await recortarLogo(f, 640);
-    if (datos.length > 680_000) datos = await recortarLogo(f, 400);
-    if (datos.length > 680_000) return avisar('La imagen es muy pesada; prueba con otra', 'error');
+    // Se recorta el margen blanco o transparente y se guarda hasta 1024 px para que se vea nítido
+    let datos = await recortarLogo(f, 1024);
+    if (datos.length > 1_400_000) datos = await recortarLogo(f, 720);
+    if (datos.length > 1_400_000) return avisar('La imagen es muy pesada; prueba con otra', 'error');
     guardar(datos);
   }
 
@@ -87,7 +95,13 @@ function Logo() {
             </Boton>
             {marca?.logo && <Boton variante="fantasma" disabled={enviando} onClick={() => guardar(null)}>Quitar</Boton>}
           </div>
-          <p className="text-xs text-slate-500">PNG, JPG o WebP. Los márgenes en blanco se recortan solos.</p>
+          <p className="text-xs text-slate-500">PNG, JPG o WebP. Los márgenes en blanco se recortan solos. Mejor en PNG y de al menos 500 px de ancho.</p>
+          {bajaCalidad && (
+            <p className="flex max-w-md items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-inset ring-amber-200">
+              <WarningCircle size={16} weight="fill" className="mt-px shrink-0 text-amber-500" />
+              <span>Tu logo está guardado en baja calidad ({calidad!.w}×{calidad!.h} px{calidad!.jpg ? ', JPG comprimido' : ''}) y puede verse borroso. Sube el archivo original con «Cambiar logo».</span>
+            </p>
+          )}
         </div>
         <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { elegir(e.target.files?.[0]); e.target.value = ''; }} />
       </div>

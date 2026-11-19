@@ -185,10 +185,10 @@ export function solicitudesAdminRouter() {
   // ------------------------------------------------------------ logo de la empresa
   r.put('/admin/marca', requiereRol('administrador'), async (req, res, next) => {
     const p = z.object({
-      // PNG/JPG/WebP como data URL, máx. ~500 KB. SVG no se acepta (podría llevar scripts).
-      logo: z.string().max(700_000).regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, 'formato no admitido').nullable(),
+      // PNG/JPG/WebP como data URL, máx. ~1 MB. SVG no se acepta (podría llevar scripts).
+      logo: z.string().max(1_450_000).regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, 'formato no admitido').nullable(),
     }).safeParse(req.body);
-    if (!p.success) return res.status(400).json({ error: 'VALIDACION', mensaje: 'Usa una imagen PNG, JPG o WebP de máximo 500 KB' });
+    if (!p.success) return res.status(400).json({ error: 'VALIDACION', mensaje: 'Usa una imagen PNG, JPG o WebP de máximo 1 MB' });
     try {
       await pool.query(
         `INSERT INTO configuracion (clave, valor) VALUES ('marca', $1)

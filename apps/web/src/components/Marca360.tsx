@@ -12,11 +12,7 @@ export function FirmaSistema({ version, oscuro, className = '' }: { version?: st
   return (
     <span
       className={`codigo inline-flex flex-wrap items-center gap-x-1.5 ${className}`} style={{ color: c.texto }}>
-      <span>POS DGII © {new Date().getFullYear()}</span>
-      <span>·</span>
-      <span>Creado por <b className="font-bold" style={{ color: fuerte }}>Erick Nex</b></span>
-      <span>·</span>
-      <b className="font-bold" style={{ color: fuerte }}>NexTech<span style={{ color: acento }}>360</span></b>
+      <b className="font-bold text-[13px]" style={{ color: fuerte }}>NexTech<span style={{ color: acento }}>360</span></b>
       {version && <><span>·</span><span>v{version}</span></>}
     </span>
   );

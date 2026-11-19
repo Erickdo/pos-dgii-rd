@@ -80,7 +80,7 @@ function Logo() {
     <Tarjeta>
       <EncabezadoTarjeta titulo="Logo de la empresa" descripcion="Se muestra en la pantalla de inicio de sesión y en el menú lateral." />
       <div className="flex flex-wrap items-center gap-5 p-5">
-        <div className="grid size-24 place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-2">
+        <div className="grid h-24 min-w-24 place-items-center rounded-2xl border border-dashed border-slate-300 bg-white px-4">
           <LogoEmpresa marca={marca} tamano="lg" />
         </div>
         <div className="space-y-2">

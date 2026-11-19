@@ -56,7 +56,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
       {/* ------------------------------------------------ barra lateral */}
       <aside className={`flex shrink-0 flex-col bg-slate-900 text-slate-300 transition-[width] duration-200 ${colapsado ? 'w-[72px]' : 'w-64'}`}>
         <div className={`flex h-16 items-center gap-3 border-b border-slate-800 ${colapsado ? 'justify-center px-0' : 'px-5'}`}>
-          <LogoEmpresa marca={marca} tamano="sm" />
+          <span className={`flex shrink-0 ${colapsado ? 'max-w-[52px] overflow-hidden' : ''}`}><LogoEmpresa marca={marca} tamano="sm" /></span>
           {!colapsado && (
             <div className="min-w-0 leading-tight">
               <div className="truncate text-sm font-semibold text-white">{negocio}</div>

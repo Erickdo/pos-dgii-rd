@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
-  Storefront, CashRegister, ShieldCheck, User, LockKey, Eye, EyeSlash, CircleNotch, Check,
+  Storefront, CashRegister, ShieldCheck, User, LockKey, Eye, EyeSlash, CircleNotch, Check, CaretDown,
   WarningCircle, PaperPlaneTilt, CheckCircle,
 } from '@phosphor-icons/react';
 import { api, ApiError, type Sesion } from '../api';
@@ -12,7 +12,7 @@ export interface Marca { nombre: string; logo: string | null }
 
 const RECORDAR = 'pos.ultimoAcceso';
 function leerRecordado(): { usuario: string; modo: ModoAcceso } {
-  try { return { usuario: '', modo: 'caja', ...JSON.parse(localStorage.getItem(RECORDAR) ?? '{}') }; } catch { return { usuario: '', modo: 'caja' }; }
+  try { return { usuario: '', modo: 'administrador', ...JSON.parse(localStorage.getItem(RECORDAR) ?? '{}') }; } catch { return { usuario: '', modo: 'administrador' }; }
 }
 
 /** Logo de la empresa, o un ícono neutro si todavía no se ha subido. */
@@ -37,12 +37,10 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
   const [estado, setEstado] = useState<'listo' | 'cargando' | 'exito'>('listo');
   const [sacudir, setSacudir] = useState(0);
   const [solicitar, setSolicitar] = useState(false);
-  const [version, setVersion] = useState('');
   const refSecreto = useRef<HTMLInputElement>(null);
   const refUsuario = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch('/api/version').then((r) => r.json()).then((v) => setVersion(v.version)).catch(() => {});
     api<Marca>('/marca').then(setMarca).catch(() => setMarca({ nombre: 'Punto de Venta', logo: null }));
     (recordado.usuario ? refSecreto : refUsuario).current?.focus();
   }, []); // eslint-disable-line
@@ -74,86 +72,76 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
     }
   }
 
-  const titulo = modo === 'caja' ? 'Acceso a caja' : 'Acceso administrativo';
-  const subtitulo = modo === 'caja' ? 'Entra para facturar y manejar tu turno' : 'Reportes, inventario, usuarios y configuración';
-
   return (
-    <div className="flex min-h-full flex-col items-center justify-center bg-slate-50 px-4 py-10">
-      <div key={sacudir} className={`w-full max-w-[420px] ${sacudir ? 'sacudir' : ''}`}>
-        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-[0_1px_2px_rgba(15,23,42,.04),0_12px_32px_-8px_rgba(15,23,42,.12)] sm:px-9">
-          {/* marca */}
-          <div className="flex flex-col items-center text-center">
-            {marca ? <LogoEmpresa marca={marca} tamano="lg" /> : <span className="size-20 animate-pulse rounded-2xl bg-slate-100" />}
-            <h1 className="mt-4 text-xl font-bold tracking-tight text-slate-900">{marca?.nombre ?? ' '}</h1>
-            <p className="mt-0.5 text-sm text-slate-500">Punto de Venta</p>
-          </div>
+    <div className="flex min-h-dvh flex-col bg-slate-50 px-4">
+      <main className="flex flex-1 items-center justify-center py-6">
+        <div key={sacudir} className={`w-full max-w-[380px] ${sacudir ? 'sacudir' : ''}`}>
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 pb-5 pt-7 shadow-[0_1px_2px_rgba(15,23,42,.04),0_12px_32px_-8px_rgba(15,23,42,.12)] sm:px-8">
+            {/* marca */}
+            <div className="flex flex-col items-center text-center">
+              {marca ? <LogoEmpresa marca={marca} tamano="md" /> : <span className="size-14 animate-pulse rounded-xl bg-slate-100" />}
+              <h1 className="mt-3 text-lg font-bold leading-tight tracking-tight text-slate-900">{marca?.nombre ?? '\u00a0'}</h1>
+            </div>
 
-          {/* tipo de acceso */}
-          <div role="tablist" aria-label="Tipo de acceso" className="mt-7 grid grid-cols-2 rounded-xl bg-slate-100 p-1">
-            {([['caja', 'Caja', CashRegister], ['administrador', 'Administrador', ShieldCheck]] as const).map(([id, texto, Icono]) => (
-              <button key={id} type="button" role="tab" aria-selected={modo === id}
-                onClick={() => { setModo(id); setErrores({}); }}
-                className={`flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition
-                  ${modo === id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                <Icono size={19} weight={modo === id ? 'fill' : 'regular'} className={modo === id ? 'text-blue-600' : ''} />
-                {texto}
+            <form onSubmit={enviar} noValidate className="mt-6 space-y-3.5">
+              <CampoIcono etiqueta="Perfil" icono={modo === 'caja' ? <CashRegister size={19} /> : <ShieldCheck size={19} />}>
+                <select value={modo} disabled={estado !== 'listo'}
+                  onChange={(e) => { setModo(e.target.value as ModoAcceso); setErrores({}); }}
+                  className="h-11 w-full cursor-pointer appearance-none bg-transparent pl-11 pr-10 text-[15px] text-slate-900 outline-none">
+                  <option value="caja">Caja</option>
+                  <option value="administrador">Administrador</option>
+                </select>
+                <CaretDown size={16} className="pointer-events-none absolute right-3.5 text-slate-400" />
+              </CampoIcono>
+
+              <CampoIcono etiqueta="Usuario o correo" icono={<User size={19} />} error={errores.usuario}>
+                <input ref={refUsuario} value={usuario} autoComplete="username" autoCapitalize="none" spellCheck={false}
+                  onChange={(e) => { setUsuario(e.target.value); setErrores((x) => ({ ...x, usuario: undefined, general: undefined })); }}
+                  placeholder="Tu usuario o correo" disabled={estado !== 'listo'}
+                  className="h-11 w-full bg-transparent pl-11 pr-3 text-[15px] text-slate-900 outline-none placeholder:text-slate-400" />
+              </CampoIcono>
+
+              <CampoIcono etiqueta="Contraseña o PIN" icono={<LockKey size={19} />} error={errores.secreto}
+                accion={
+                  <button type="button" onClick={() => setVer((v) => !v)} aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="grid size-10 place-items-center rounded-lg text-slate-400 hover:text-slate-700">
+                    {ver ? <EyeSlash size={20} /> : <Eye size={20} />}
+                  </button>
+                }>
+                <input ref={refSecreto} value={secreto} type={ver ? 'text' : 'password'} autoComplete="current-password"
+                  onChange={(e) => { setSecreto(e.target.value); setErrores((x) => ({ ...x, secreto: undefined, general: undefined })); }}
+                  placeholder="••••••" disabled={estado !== 'listo'}
+                  className="h-11 w-full bg-transparent pl-11 pr-12 text-[15px] tracking-wide text-slate-900 outline-none placeholder:text-slate-400" />
+              </CampoIcono>
+
+              {errores.general && (
+                <div role="alert" className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-700 ring-1 ring-inset ring-red-200">
+                  <WarningCircle size={18} weight="fill" className="mt-px shrink-0" /> {errores.general}
+                </div>
+              )}
+
+              <button type="submit" disabled={estado !== 'listo'}
+                className={`!mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-sm transition
+                  ${estado === 'exito' ? 'bg-emerald-500 shadow-emerald-500/25' : 'bg-blue-600 shadow-blue-600/25 hover:bg-blue-700 active:bg-blue-800'}`}>
+                {estado === 'cargando' && <><CircleNotch size={20} className="animate-spin" /> Verificando…</>}
+                {estado === 'exito' && <><Check size={20} weight="bold" className="aparecer-check" /> ¡Bienvenido!</>}
+                {estado === 'listo' && 'Iniciar sesión'}
               </button>
-            ))}
-          </div>
+            </form>
 
-          <div className="mt-6">
-            <h2 className="text-base font-semibold text-slate-900">{titulo}</h2>
-            <p className="text-sm text-slate-500">{subtitulo}</p>
-          </div>
-
-          <form onSubmit={enviar} noValidate className="mt-5 space-y-4">
-            <CampoIcono etiqueta="Usuario o correo" icono={<User size={19} />} error={errores.usuario}>
-              <input ref={refUsuario} value={usuario} autoComplete="username" autoCapitalize="none" spellCheck={false}
-                onChange={(e) => { setUsuario(e.target.value); setErrores((x) => ({ ...x, usuario: undefined, general: undefined })); }}
-                placeholder="usuario o correo@empresa.com" disabled={estado !== 'listo'}
-                className="h-12 w-full bg-transparent pl-11 pr-3 text-[15px] text-slate-900 outline-none placeholder:text-slate-400" />
-            </CampoIcono>
-
-            <CampoIcono etiqueta="Contraseña o PIN" icono={<LockKey size={19} />} error={errores.secreto}
-              accion={
-                <button type="button" onClick={() => setVer((v) => !v)} aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  className="grid size-11 place-items-center rounded-lg text-slate-400 hover:text-slate-700">
-                  {ver ? <EyeSlash size={20} /> : <Eye size={20} />}
-                </button>
-              }>
-              <input ref={refSecreto} value={secreto} type={ver ? 'text' : 'password'} autoComplete="current-password"
-                onChange={(e) => { setSecreto(e.target.value); setErrores((x) => ({ ...x, secreto: undefined, general: undefined })); }}
-                placeholder="••••" disabled={estado !== 'listo'}
-                className="h-12 w-full bg-transparent pl-11 pr-12 text-[15px] tracking-wide text-slate-900 outline-none placeholder:text-slate-400" />
-            </CampoIcono>
-
-            {errores.general && (
-              <div role="alert" className="flex items-start gap-2.5 rounded-lg bg-red-50 px-3.5 py-3 text-sm text-red-700 ring-1 ring-inset ring-red-200">
-                <WarningCircle size={19} weight="fill" className="mt-px shrink-0" /> {errores.general}
-              </div>
-            )}
-
-            <button type="submit" disabled={estado !== 'listo'}
-              className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-sm transition
-                ${estado === 'exito' ? 'bg-emerald-500 shadow-emerald-500/25' : 'bg-blue-600 shadow-blue-600/25 hover:bg-blue-700 active:bg-blue-800'}`}>
-              {estado === 'cargando' && <><CircleNotch size={20} className="animate-spin" /> Verificando…</>}
-              {estado === 'exito' && <><Check size={20} weight="bold" className="aparecer-check" /> ¡Bienvenido!</>}
-              {estado === 'listo' && 'Iniciar sesión'}
-            </button>
-          </form>
-
-          <div className="mt-6 border-t border-slate-100 pt-5 text-center text-sm text-slate-500">
-            ¿Eres nuevo integrante?{' '}
-            <button type="button" onClick={() => setSolicitar(true)} className="font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-              Solicitar acceso
-            </button>
+            <div className="mt-5 border-t border-slate-100 pt-4 text-center text-sm text-slate-500">
+              ¿Eres nuevo integrante?{' '}
+              <button type="button" onClick={() => setSolicitar(true)} className="font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                Solicitar acceso
+              </button>
+            </div>
           </div>
         </div>
-        <div className="mt-5 flex flex-col items-center gap-1 text-center text-xs text-slate-400">
-          <FirmaSistema version={version} className="justify-center" />
-          <span>Facturación electrónica DGII · e-CF</span>
-        </div>
-      </div>
+      </main>
+
+      <footer className="flex justify-center pb-4 text-center text-xs">
+        <FirmaSistema className="justify-center" />
+      </footer>
 
       {solicitar && <SolicitarAcceso modoInicial={modo} onCerrar={() => setSolicitar(false)} />}
     </div>
@@ -163,7 +151,7 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
 function CampoIcono({ etiqueta, icono, error, accion, children }: { etiqueta: string; icono: ReactNode; error?: string; accion?: ReactNode; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">{etiqueta}</span>
+      <span className="mb-1 block text-sm font-medium text-slate-700">{etiqueta}</span>
       <span className={`relative flex items-center rounded-xl border bg-white transition focus-within:ring-4
         ${error ? 'border-red-400 focus-within:ring-red-500/10' : 'border-slate-300 focus-within:border-blue-500 focus-within:ring-blue-500/10'}`}>
         <span className={`pointer-events-none absolute left-3.5 ${error ? 'text-red-400' : 'text-slate-400'}`}>{icono}</span>

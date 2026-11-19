@@ -4,6 +4,7 @@
  */
 import { pool } from '../src/db.js';
 import { hashSecreto } from '../src/auth.js';
+import { CUENTA_INICIAL } from '../src/cuenta-inicial.js';
 
 const PRODUCTOS: [string, string, string | null, string, number, 1 | 2 | 3 | 4, number][] = [
   // categoría, código, código de barras, nombre, PRECIO FINAL con ITBIS, indicador, stock
@@ -42,14 +43,11 @@ async function main() {
   const su = await q(`INSERT INTO sucursales (emisor_id, codigo, nombre, direccion) VALUES ($1,'001','Principal','C/ Principal #1') RETURNING id`, [em.id]);
   await pool.query(`INSERT INTO terminales (sucursal_id, codigo, descripcion) VALUES ($1,'CAJA1','Mostrador'), ($1,'CAJA2','Terraza')`, [su.id]);
 
-  for (const [nombre, usuario, rol, pin] of [
-    ['Administrador', 'admin', 'administrador', '1234'],
-    ['Cajero 1', 'cajero1', 'cajero', '0000'],
-  ]) {
-    await pool.query(
-      `INSERT INTO usuarios (nombre, usuario, password_hash, pin_hash, rol, sucursal_id) VALUES ($1,$2,$3,$4,$5,$6)`,
-      [nombre, usuario, hashSecreto(pin), hashSecreto(pin), rol, su.id]);
-  }
+  // Única cuenta inicial: el administrador. Los cajeros se crean después o piden acceso desde el login.
+  const h = hashSecreto(CUENTA_INICIAL.secreto);
+  await pool.query(
+    `INSERT INTO usuarios (nombre, usuario, password_hash, pin_hash, rol, sucursal_id) VALUES ($1,$2,$3,$3,'administrador',$4)`,
+    [CUENTA_INICIAL.nombre, CUENTA_INICIAL.usuario, h, su.id]);
 
   // Rangos de PRUEBA. En producción se cargan los rangos autorizados en la Oficina Virtual.
   await pool.query(
@@ -78,7 +76,7 @@ async function main() {
     `INSERT INTO clientes (tipo_identificacion, identificacion, nombre, es_contribuyente, correo_fe, limite_credito) VALUES
        ('RNC','101000007','DISTRIBUIDORA EJEMPLO SRL', true, 'compras@ejemplo.do', 50000)`);
 
-  console.log('Datos iniciales creados. Usuarios: Administrador (PIN 1234) y Cajero 1 (PIN 0000).');
+  console.log(`Datos iniciales creados. Administrador: usuario ${CUENTA_INICIAL.usuario}.`);
   await pool.end();
 }
 

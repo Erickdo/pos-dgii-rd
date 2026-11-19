@@ -1,3 +1,4 @@
+import { asegurarCuentaInicial } from './cuenta-inicial.js';
 import express from 'express';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -100,6 +101,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 const PUERTO = Number(process.env.PORT ?? 3000);
 await migrar();
+await asegurarCuentaInicial();
 app.listen(PUERTO, () => {
   const c = certificado.info();
   console.log(`\n  POS DGII v${VERSION} listo en  http://localhost:${PUERTO}`);

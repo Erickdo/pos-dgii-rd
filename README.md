@@ -116,7 +116,7 @@ Datos de respaldo en la venta: el XML firmado y el RFCE se guardan en la BD (`xm
 2. En PowerShell, dentro de la carpeta extraída: `Get-ChildItem -Recurse | Unblock-File` y luego `.\INSTALAR-POS.cmd`.
 3. Se abre **http://localhost:3000**. Queda el acceso directo **"Punto de Venta"** en el escritorio.
 
-Usuarios iniciales: **`admin` / 1234** (pestaña Administrador) y **`cajero1` / 0000** (pestaña Caja). Cámbialos en Configuración → Usuarios y accesos. Los nuevos integrantes piden acceso desde la pantalla de entrada y el administrador los aprueba desde la campana.
+Cuenta inicial: **`Erickqdo` / 010509** (administrador). Cámbiala en Configuración → Usuarios y accesos. Los cajeros los creas tú, o piden acceso desde la pantalla de entrada y los apruebas desde la campana.
 Reinstalar o actualizar **no borra datos**: el servidor aplica solo las migraciones de `database/migraciones/` al arrancar.
 
 ### Módulos (menú lateral)

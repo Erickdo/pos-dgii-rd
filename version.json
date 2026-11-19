@@ -1,7 +1,19 @@
 {
-  "version": "2.1.0",
+  "version": "2.2.0",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.2.0",
+      "fecha": "2026-11-18",
+      "titulo": "Inicio de sesión más simple",
+      "cambios": [
+        "Login compacto que cabe en cualquier pantalla, sin barras de desplazamiento",
+        "Se quitan las pestañas: ahora eliges el perfil (Caja o Administrador) en un selector",
+        "Cuenta inicial del administrador: usuario Erickqdo",
+        "Se eliminan los usuarios de prueba admin y cajero1 (si tienen ventas, quedan desactivados para no perder el historial)",
+        "Firma POS DGII © 2026 · Creado por Erick Nex · NexTech360 al pie del login"
+      ]
+    },
     {
       "version": "2.1.0",
       "fecha": "2026-11-18",

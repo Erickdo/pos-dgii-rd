@@ -1,7 +1,15 @@
 {
-  "version": "2.2.1",
+  "version": "2.2.2",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.2.2",
+      "fecha": "2026-11-18",
+      "titulo": "Firma más limpia",
+      "cambios": [
+        "La firma al pie del login vuelve a ser texto suelto, sin franja oscura, con el 360 en amarillo"
+      ]
+    },
     {
       "version": "2.2.1",
       "fecha": "2026-11-18",

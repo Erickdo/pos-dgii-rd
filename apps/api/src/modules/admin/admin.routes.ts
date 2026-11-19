@@ -106,7 +106,78 @@ export function adminRouter() {
     } catch (e) { errorPg(e, res, next); }
   });
 
+  /**
+   * Eliminar producto. Si ya se vendió o se compró, borrarlo rompería facturas y el kardex:
+   * en ese caso responde 409 con `tieneHistorial` y la interfaz ofrece desactivarlo.
+   * Con ?desactivar=1 lo marca inactivo (deja de salir en el POS, conserva su historial).
+   */
+  r.delete('/admin/productos/:id', async (req, res, next) => {
+    const id = req.params.id;
+    try {
+      const prod = (await pool.query(`SELECT id, nombre, activo FROM productos WHERE id = $1`, [id])).rows[0];
+      if (!prod) return res.status(404).json({ error: 'NO_ENCONTRADO', mensaje: 'Producto no encontrado' });
+      const uso = (await pool.query(
+        `SELECT (SELECT count(*) FROM detalles_venta WHERE producto_id = $1)::int AS ventas,
+                (SELECT count(*) FROM compras_detalle WHERE producto_id = $1)::int AS compras,
+                (SELECT count(*) FROM movimientos_inventario WHERE producto_id = $1 AND referencia_tipo IS DISTINCT FROM 'inventario_inicial')::int AS movimientos`,
+        [id])).rows[0];
+      const tieneHistorial = uso.ventas + uso.compras + uso.movimientos > 0;
+      if (req.query.desactivar === '1') {
+        await pool.query(`UPDATE productos SET activo = false, actualizado_en = now() WHERE id = $1`, [id]);
+        await pool.query(`INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id, antes) VALUES ($1,'producto.desactivar','producto',$2,$3)`,
+          [usuarioDe(req).id, id, JSON.stringify(prod)]);
+        return res.json({ ok: true, desactivado: true });
+      }
+      if (tieneHistorial) {
+        return res.status(409).json({
+          error: 'CON_HISTORIAL', tieneHistorial: true, uso,
+          mensaje: `«${prod.nombre}» tiene ${uso.ventas} venta(s), ${uso.compras} compra(s) y ${uso.movimientos} movimiento(s). Para no perder ese historial se puede desactivar.`,
+        });
+      }
+      await withTransaction(async (tx) => {
+        await tx.query(`DELETE FROM movimientos_inventario WHERE producto_id = $1`, [id]);   // solo el inventario inicial
+        await tx.query(`DELETE FROM productos WHERE id = $1`, [id]);
+        await tx.query(`INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id, antes) VALUES ($1,'producto.eliminar','producto',$2,$3)`,
+          [usuarioDe(req).id, id, JSON.stringify(prod)]);
+      });
+      res.json({ ok: true, eliminado: true });
+    } catch (e) { errorPg(e, res, next); }
+  });
+
   // ============================================================ categorías
+  r.get('/admin/categorias', async (_req, res, next) => {
+    try {
+      res.json((await pool.query(
+        `SELECT c.id, c.nombre, count(p.id)::int AS productos, count(p.id) FILTER (WHERE p.activo)::int AS activos
+           FROM categorias c LEFT JOIN productos p ON p.categoria_id = c.id
+          GROUP BY c.id ORDER BY c.nombre`)).rows);
+    } catch (e) { next(e); }
+  });
+  /** Eliminar categoría. Si tiene productos, pide a qué categoría pasarlos (?reasignarA=<id> o 'ninguna'). */
+  r.delete('/admin/categorias/:id', async (req, res, next) => {
+    const id = req.params.id;
+    const destino = typeof req.query.reasignarA === 'string' ? req.query.reasignarA : undefined;
+    try {
+      const cat = (await pool.query(`SELECT * FROM categorias WHERE id = $1`, [id])).rows[0];
+      if (!cat) return res.status(404).json({ error: 'NO_ENCONTRADO', mensaje: 'Categoría no encontrada' });
+      const n = Number((await pool.query(`SELECT count(*) FROM productos WHERE categoria_id = $1`, [id])).rows[0].count);
+      if (n > 0 && !destino) {
+        return res.status(409).json({ error: 'CON_PRODUCTOS', productos: n, mensaje: `«${cat.nombre}» tiene ${n} producto(s). Elige a qué categoría pasarlos.` });
+      }
+      if (destino && destino !== 'ninguna') {
+        if (destino === id) return res.status(400).json({ error: 'VALIDACION', mensaje: 'Elige una categoría distinta' });
+        const ok = (await pool.query(`SELECT 1 FROM categorias WHERE id = $1`, [destino])).rowCount;
+        if (!ok) return res.status(400).json({ error: 'VALIDACION', mensaje: 'La categoría de destino no existe' });
+      }
+      await withTransaction(async (tx) => {
+        if (n > 0) await tx.query(`UPDATE productos SET categoria_id = $2, actualizado_en = now() WHERE categoria_id = $1`, [id, destino === 'ninguna' ? null : destino]);
+        await tx.query(`DELETE FROM categorias WHERE id = $1`, [id]);
+        await tx.query(`INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id, antes, despues) VALUES ($1,'categoria.eliminar','categoria',$2,$3,$4)`,
+          [usuarioDe(req).id, id, JSON.stringify(cat), JSON.stringify({ reasignados: n, destino: destino ?? null })]);
+      });
+      res.json({ ok: true, reasignados: n });
+    } catch (e) { errorPg(e, res, next); }
+  });
   r.post('/admin/categorias', async (req, res, next) => {
     const p = z.object({ nombre: z.string().trim().min(2).max(60) }).safeParse(req.body);
     if (!p.success) return invalido(res, p.error);

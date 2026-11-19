@@ -9,7 +9,7 @@ import { avisar, hoyISO, num, rd, sumarDias } from '../util';
 interface VentaFila {
   id: string; fecha: string; monto_total: string; total_itbis: string; total_descuento: string; estado: 'completada' | 'anulada';
   motivo_anulacion: string | null; encf: string; tipo_ecf: string; estado_fiscal: string; cliente: string; identificacion: string | null;
-  cajero: string; terminal: string; metodos: string | null; nota_credito: string | null;
+  cajero: string; cajero_rol: string; terminal: string; metodos: string | null; nota_credito: string | null;
 }
 interface ResultadoNC { notaCredito: string; facturaAnulada: string; codigoSeguridad: string; devolverEfectivo: string; salidaRegistrada: boolean; devolverPorOtroMedio: { metodo: string; monto: string }[] }
 
@@ -64,7 +64,7 @@ export default function Ventas() {
           <Pestanas valor={estado} onChange={setEstado} opciones={[{ id: '', texto: 'Todas' }, { id: 'completada', texto: 'Vigentes' }, { id: 'anulada', texto: 'Anuladas' }]} />
         </div>
 
-        <Tabla columnas={['Fecha', 'Comprobante', 'Cliente', 'Cajero', 'Pago', 'Estado DGII', { t: 'Total', derecha: true }, { t: '', derecha: true }]}
+        <Tabla columnas={['Fecha', 'Comprobante', 'Cliente', 'Atendió / Caja', 'Pago', 'Estado DGII', { t: 'Total', derecha: true }, { t: '', derecha: true }]}
           vacio="No hay ventas en este período">
           {filas.map((f) => (
             <tr key={f.id} className={`hover:bg-slate-50/70 ${f.estado === 'anulada' ? 'opacity-70' : ''}`}>
@@ -78,7 +78,7 @@ export default function Ventas() {
                 <div className="max-w-48 truncate font-medium">{f.cliente}</div>
                 {f.identificacion && <div className="codigo text-xs text-slate-500">{f.identificacion}</div>}
               </Celda>
-              <Celda className="text-slate-600">{f.cajero}<div className="codigo text-xs text-slate-400">{f.terminal}</div></Celda>
+              <Celda className="text-slate-600">{f.cajero}{f.cajero_rol === 'administrador' && <span className="ml-1 rounded bg-blue-50 px-1 text-[10px] font-semibold text-blue-700">ADMIN</span>}<div className="codigo text-[11px] text-slate-400">{f.terminal}</div></Celda>
               <Celda className="capitalize text-slate-600">{f.metodos?.replace('credito', 'crédito')}</Celda>
               <Celda>{f.estado === 'anulada' ? <Insignia tono="red">Anulada</Insignia> : <InsigniaFiscal estado={f.estado_fiscal} />}</Celda>
               <Celda derecha className={`num font-semibold ${f.estado === 'anulada' ? 'line-through' : ''}`}>{num(f.monto_total)}</Celda>

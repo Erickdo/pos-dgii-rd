@@ -6,6 +6,8 @@
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
+/* Escala base compacta: 1rem = 15 px → texto normal 13 px (text-sm), tablas 13 px, etiquetas 11 px */
+html { font-size: 15px; }
 html, body, #root { height: 100%; }
 body {
   margin: 0;

@@ -24,11 +24,13 @@ export function cajasRouter() {
     const u = usuarioDe(req);
     try {
       const { rows } = await pool.query(
-        `SELECT c.id, t.codigo AS terminal, us.nombre AS cajero, c.estado,
+        `SELECT c.id, t.codigo AS terminal, us.nombre AS cajero, us.rol AS cajero_rol, c.estado,
+                cp.nombre AS cerrada_por, cp.rol AS cerrada_por_rol,
                 to_char(c.abierta_en, 'DD-MM-YYYY HH24:MI') AS abierta, to_char(c.cerrada_en, 'DD-MM-YYYY HH24:MI') AS cerrada,
                 c.monto_inicial, c.efectivo_esperado, c.efectivo_contado, c.diferencia,
                 (c.detalle_arqueo ->> 'tarjeta_lote')::numeric AS tarjeta_lote, r.total_ventas, r.num_ventas, r.por_metodo
            FROM cajas c JOIN terminales t ON t.id = c.terminal_id JOIN usuarios us ON us.id = c.usuario_id
+           LEFT JOIN usuarios cp ON cp.id = c.cerrada_por
            JOIN v_resumen_caja r ON r.caja_id = c.id
           WHERE ($1::uuid IS NULL OR c.usuario_id = $1)
           ORDER BY c.abierta_en DESC LIMIT 60`, [u.rol === 'cajero' ? u.id : null]);
@@ -67,8 +69,10 @@ export function cajasRouter() {
     try {
       const resumen = (await pool.query(`SELECT * FROM v_resumen_caja WHERE caja_id = $1`, [req.params.id])).rows[0];
       const movimientos = (await pool.query(
-        `SELECT m.tipo, m.monto, m.motivo, to_char(m.creado_en, 'HH24:MI') AS hora, u.nombre AS usuario
+        `SELECT m.tipo, m.monto, m.motivo, to_char(m.creado_en, 'HH24:MI') AS hora, u.nombre AS usuario, u.rol AS usuario_rol,
+                au.nombre AS autorizado_por
            FROM movimientos_caja m JOIN usuarios u ON u.id = m.usuario_id
+           LEFT JOIN usuarios au ON au.id = m.autorizado_por
           WHERE m.caja_id = $1 ORDER BY m.creado_en DESC`, [req.params.id])).rows;
       res.json({ resumen, movimientos });
     } catch (e) { next(e); }

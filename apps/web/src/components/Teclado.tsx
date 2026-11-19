@@ -4,11 +4,11 @@ import { Backspace } from '@phosphor-icons/react';
 export default function Teclado({ onTecla, decimal = false, compacto = false }: { onTecla: (t: string) => void; decimal?: boolean; compacto?: boolean }) {
   const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', decimal ? '.' : 'C', '0', '⌫'];
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-1.5">
       {teclas.map((t) => (
         <button key={t} type="button" onClick={() => onTecla(t)}
-          className={`num grid place-items-center rounded-xl border border-slate-200 bg-white text-xl font-semibold text-slate-800 transition hover:bg-slate-50 active:bg-slate-100 ${compacto ? 'h-12' : 'h-14'}`}>
-          {t === '⌫' ? <Backspace size={24} /> : t}
+          className={`num grid place-items-center rounded-lg border border-slate-200 bg-white text-lg font-semibold text-slate-800 transition hover:bg-slate-50 active:bg-slate-100 ${compacto ? 'h-10' : 'h-12'}`}>
+          {t === '⌫' ? <Backspace size={20} /> : t}
         </button>
       ))}
     </div>

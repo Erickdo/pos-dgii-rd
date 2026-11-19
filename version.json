@@ -1,7 +1,21 @@
 {
-  "version": "2.3.4",
+  "version": "2.4.0",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.4.0",
+      "fecha": "2026-11-19",
+      "titulo": "Interfaz compacta, nuevo Punto de Venta y ticket DGII",
+      "cambios": [
+        "Toda la interfaz más compacta: textos de 13 px, campos, botones, tarjetas, tablas y modales más pequeños y alineados",
+        "Punto de Venta rediseñado: catálogo compacto con buscador y categorías, y cobro dentro del carrito (efectivo con devuelta, tarjeta, transferencia, crédito o pago mixto)",
+        "Ticket con fuente de impresora térmica, columnas CANT. / DESCRIPCIÓN / ITBIS / VALOR y desglose DGII: subtotal, exento, gravado 18 % y 16 %, ITBIS por tasa y total",
+        "El ticket muestra quién atendió (nombre y rol) y desde qué caja",
+        "Inventario: eliminar productos (si tienen ventas o compras se ofrece desactivarlos) y categorías (reasignando sus productos)",
+        "Compras con ITBIS por línea para el 606; ajustes con motivos: conteo físico, merma, vencido, rotura",
+        "Control de Caja e Historial muestran el rol de quien abrió, cerró, facturó o registró cada movimiento"
+      ]
+    },
     {
       "version": "2.3.4",
       "fecha": "2026-11-19",

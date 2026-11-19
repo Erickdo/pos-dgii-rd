@@ -61,7 +61,8 @@ export function ventasRouter(firmante: () => Firmante, despertarWorker: () => vo
   r.get('/ventas/:id/ticket', async (req, res, next) => {
     try {
       const v = (await pool.query(
-        `SELECT v.*, c.nombre AS cliente_nombre, c.identificacion AS cliente_ident, u.nombre AS cajero,
+        `SELECT v.*, c.nombre AS cliente_nombre, c.identificacion AS cliente_ident, c.tipo_identificacion AS cliente_tipo_ident,
+                u.nombre AS cajero, u.rol AS cajero_rol, t.codigo AS caja_codigo, t.descripcion AS caja_descripcion,
                 f.encf, f.tipo_ecf, f.fecha_vencimiento_sec, f.codigo_seguridad, f.url_qr, f.estado AS estado_fiscal,
                 to_char(f.fecha_hora_firma, 'DD-MM-YYYY HH24:MI:SS') AS fecha_firma,
                 to_char(v.creado_en, 'DD-MM-YYYY HH24:MI') AS fecha,
@@ -69,6 +70,8 @@ export function ventasRouter(firmante: () => Firmante, despertarWorker: () => vo
            FROM ventas v
            JOIN clientes c ON c.id = v.cliente_id
            JOIN usuarios u ON u.id = v.usuario_id
+           LEFT JOIN cajas ca ON ca.id = v.caja_id
+           LEFT JOIN terminales t ON t.id = ca.terminal_id
            JOIN facturas_electronicas f ON f.venta_id = v.id
            JOIN emisor e ON e.id = f.emisor_id
           WHERE v.id = $1`, [req.params.id],
@@ -109,7 +112,7 @@ export function ventasRouter(firmante: () => Firmante, despertarWorker: () => vo
       const { rows } = await pool.query(
         `SELECT v.id, to_char(v.creado_en, 'DD-MM-YYYY HH24:MI') AS fecha, v.monto_total, v.total_itbis, v.total_descuento,
                 v.estado, v.motivo_anulacion, f.encf, f.tipo_ecf, f.estado AS estado_fiscal, c.nombre AS cliente,
-                c.identificacion, u.nombre AS cajero, t.codigo AS terminal,
+                c.identificacion, u.nombre AS cajero, u.rol AS cajero_rol, t.codigo AS terminal,
                 (SELECT string_agg(DISTINCT p.metodo::text, ', ') FROM pagos_venta p WHERE p.venta_id = v.id) AS metodos,
                 (SELECT nc.encf FROM facturas_electronicas nc WHERE nc.referencia_fe_id = f.id) AS nota_credito
            FROM ventas v

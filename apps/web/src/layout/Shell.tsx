@@ -54,8 +54,8 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
   return (
     <div className="flex h-full">
       {/* ------------------------------------------------ barra lateral */}
-      <aside className={`flex shrink-0 flex-col bg-slate-900 text-slate-300 transition-[width] duration-200 ${colapsado ? 'w-[72px]' : 'w-64'}`}>
-        <div className={`flex h-16 items-center gap-3 border-b border-slate-800 ${colapsado ? 'justify-center px-0' : 'px-5'}`}>
+      <aside className={`flex shrink-0 flex-col bg-slate-900 text-slate-300 transition-[width] duration-200 ${colapsado ? 'w-[72px]' : 'w-60'}`}>
+        <div className={`flex h-14 items-center gap-3 border-b border-slate-800 ${colapsado ? 'justify-center px-0' : 'px-5'}`}>
           <span className={`flex shrink-0 ${colapsado ? 'max-w-[52px] overflow-hidden' : ''}`}><LogoEmpresa marca={marca} tamano="sm" /></span>
           {!colapsado && (
             <div className="min-w-0 leading-tight">
@@ -65,27 +65,27 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
           )}
         </div>
 
-        <nav className="scroll-oscuro flex-1 space-y-0.5 overflow-y-auto p-3">
+        <nav className="scroll-oscuro flex-1 space-y-0.5 overflow-y-auto p-2.5">
           {visibles.map((m, i) => {
             const activo = m.id === actual.id;
             return (
               <button key={m.id} onClick={() => ir(m.id)} title={colapsado ? m.nombre : undefined}
                 className={`group flex w-full items-center gap-3 rounded-lg text-left transition
-                  ${colapsado ? 'h-11 justify-center' : 'px-3 py-2.5'}
+                  ${colapsado ? 'h-10 justify-center' : 'px-2.5 py-1.5'}
                   ${activo ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
                 <span className="relative shrink-0">
-                  <m.Icono size={21} weight={activo ? 'fill' : 'regular'} />
+                  <m.Icono size={19} weight={activo ? 'fill' : 'regular'} />
                   {colapsado && m.id === 'configuracion' && actualizacionDisponible && <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-emerald-400 ring-2 ring-slate-900" />}
                 </span>
                 {!colapsado && (
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center justify-between text-[14px] font-medium">
-                      {m.nombre}
+                    <span className="flex items-center justify-between gap-2 text-[13px] font-medium">
+                      <span className="truncate">{m.nombre}</span>
                       {m.id === 'configuracion' && actualizacionDisponible
                         ? <span className="rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-white">NUEVA</span>
                         : <span className={`num text-[11px] ${activo ? 'text-blue-200' : 'text-slate-600'}`}>{i + 1}</span>}
                     </span>
-                    <span className={`block truncate text-xs ${activo ? 'text-blue-100/80' : 'text-slate-500'}`}>{m.corto}</span>
+                    <span className={`block truncate text-[11px] leading-tight ${activo ? 'text-blue-100/80' : 'text-slate-500'}`}>{m.corto}</span>
                   </span>
                 )}
               </button>
@@ -119,7 +119,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
 
       {/* ------------------------------------------------ contenido */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-6">
+        <header className="flex h-14 shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-5">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <actual.Icono size={18} />
@@ -147,7 +147,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
           </div>
         </header>
 
-        <main className={`min-h-0 flex-1 ${esPOS ? 'overflow-hidden' : 'scroll-fino overflow-y-auto p-6 lg:p-8'}`}>
+        <main className={`min-h-0 flex-1 ${esPOS ? 'overflow-hidden' : 'scroll-fino overflow-y-auto p-4 lg:p-6'}`}>
           <div className={esPOS ? 'h-full' : 'mx-auto max-w-[1400px]'}>
             <actual.Pagina key={actual.id} />
           </div>

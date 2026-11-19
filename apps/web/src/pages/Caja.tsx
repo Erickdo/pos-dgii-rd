@@ -10,9 +10,10 @@ interface Resumen {
   monto_inicial: string; ventas_efectivo: string; cambio_entregado: string; entradas: string; salidas: string;
   efectivo_esperado: string; total_ventas: string; total_itbis: string; num_ventas: string; por_metodo: Record<string, number> | null;
 }
-interface Movimiento { tipo: 'entrada' | 'salida'; monto: string; motivo: string; hora: string; usuario: string }
+interface Movimiento { tipo: 'entrada' | 'salida'; monto: string; motivo: string; hora: string; usuario: string; usuario_rol: string; autorizado_por: string | null }
+const ROL: Record<string, string> = { administrador: 'Admin.', cajero: 'Cajero', contador: 'Contador' };
 interface Turno {
-  id: string; terminal: string; cajero: string; estado: string; abierta: string; cerrada: string | null; monto_inicial: string;
+  id: string; terminal: string; cajero: string; cajero_rol: string; cerrada_por: string | null; cerrada_por_rol: string | null; estado: string; abierta: string; cerrada: string | null; monto_inicial: string;
   efectivo_esperado: string | null; efectivo_contado: string | null; diferencia: string | null; tarjeta_lote: string | null;
   total_ventas: string; num_ventas: string; por_metodo: Record<string, number> | null;
 }
@@ -48,7 +49,7 @@ function TurnoAbierto() {
           <span className="grid size-12 place-items-center rounded-xl bg-emerald-50 text-emerald-600"><Wallet size={26} weight="duotone" /></span>
           <div>
             <div className="flex items-center gap-2 text-lg font-bold">Caja <span className="codigo">{caja!.terminal}</span> <Insignia tono="emerald" punto>Abierta</Insignia></div>
-            <div className="text-sm text-slate-500">{usuario.nombre} · desde {caja!.abierta_en} · {caja!.sucursal}</div>
+            <div className="text-sm text-slate-500">{usuario.nombre} ({usuario.rol === 'administrador' ? 'Administrador' : 'Cajero'}) · desde {caja!.abierta_en} · {caja!.sucursal}</div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -86,7 +87,7 @@ function TurnoAbierto() {
                 <Celda className="num text-slate-500">{m.hora}</Celda>
                 <Celda>{m.tipo === 'entrada' ? <Insignia tono="emerald">Entrada</Insignia> : <Insignia tono="red">Salida</Insignia>}</Celda>
                 <Celda>{m.motivo}</Celda>
-                <Celda className="text-slate-500">{m.usuario}</Celda>
+                <Celda className="text-slate-500">{m.usuario} <span className="text-[11px] text-slate-400">({ROL[m.usuario_rol] ?? m.usuario_rol})</span>{m.autorizado_por && <div className="text-[11px] text-slate-400">Autorizó: {m.autorizado_por}</div>}</Celda>
                 <Celda derecha className="num font-semibold">{m.tipo === 'salida' ? '−' : '+'}{num(m.monto)}</Celda>
               </tr>
             ))}
@@ -231,14 +232,14 @@ function Historial() {
   return (
     <Tarjeta className="mt-6">
       <EncabezadoTarjeta titulo="Turnos anteriores" descripcion="Cuadres de efectivo y tarjetas por cierre" />
-      <Tabla columnas={['Terminal', 'Cajero', 'Apertura', 'Cierre', { t: 'Ventas', derecha: true }, { t: 'Esperado', derecha: true }, { t: 'Contado', derecha: true }, { t: 'Efectivo', derecha: true }, { t: 'Tarjetas', derecha: true }]}>
+      <Tabla columnas={['Terminal', 'Abrió / operó', 'Apertura', 'Cierre', { t: 'Ventas', derecha: true }, { t: 'Esperado', derecha: true }, { t: 'Contado', derecha: true }, { t: 'Efectivo', derecha: true }, { t: 'Tarjetas', derecha: true }]}>
         {cerrados.map((t) => {
           const d = Number(t.diferencia);
           const dt = t.tarjeta_lote != null ? Number(t.tarjeta_lote) - Number(t.por_metodo?.tarjeta ?? 0) : null;
           return (
             <tr key={t.id}>
               <Celda className="codigo font-medium">{t.terminal}</Celda>
-              <Celda>{t.cajero}</Celda>
+              <Celda>{t.cajero} <Insignia tono={t.cajero_rol === 'administrador' ? 'blue' : 'slate'}>{ROL[t.cajero_rol] ?? t.cajero_rol}</Insignia>{t.cerrada_por && t.cerrada_por !== t.cajero && <div className="text-[11px] text-slate-400">Cerró: {t.cerrada_por} ({ROL[t.cerrada_por_rol ?? ''] ?? ''})</div>}</Celda>
               <Celda className="num whitespace-nowrap text-slate-500">{t.abierta}</Celda>
               <Celda className="num whitespace-nowrap text-slate-500">{t.cerrada}</Celda>
               <Celda derecha className="num">{num(t.total_ventas)}</Celda>

@@ -1,7 +1,18 @@
 {
-  "version": "2.5.1",
+  "version": "2.5.2",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.5.2",
+      "fecha": "2026-11-19",
+      "titulo": "Factura más organizada",
+      "cambios": [
+        "Factura por secciones: negocio, tipo de comprobante en franja negra, datos del comprobante, cliente, detalle, resumen, forma de pago y validación DGII",
+        "Cada producto muestra el nombre completo arriba y debajo cantidad × precio, ITBIS y valor",
+        "Total en franja negra, devuelta en negrita y cantidad de artículos",
+        "Subtotal antes de descuentos, luego descuentos y subtotal neto"
+      ]
+    },
     {
       "version": "2.5.1",
       "fecha": "2026-11-19",

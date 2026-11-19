@@ -65,6 +65,13 @@ button:disabled { cursor: not-allowed; }
 .ticket-termico .t-chico  { font-size: var(--t-chico); }
 .ticket-termico .t-sep    { border-top: 1px dashed #000; margin: 4px 0; }
 .ticket-termico .t-sep-fino { border-top: 1px dotted #555; margin: 3px 0; }
+/* franja negra con texto blanco: tipo de comprobante y total */
+.ticket-termico .t-banda { background: #000; color: #fff; text-align: center; font-weight: 700; text-transform: uppercase; padding: 3px 4px; }
+/* título de sección centrado entre rayas: ──── DETALLE ──── */
+.ticket-termico .t-seccion { display: flex; align-items: center; gap: 6px; margin: 7px 0 3px; font-weight: 700; text-transform: uppercase; font-size: var(--t-chico); letter-spacing: 0.08em; }
+.ticket-termico .t-seccion::before, .ticket-termico .t-seccion::after { content: ''; flex: 1; border-top: 1px dashed #000; }
+.ticket-termico .t-item { padding: 2px 0; }
+.ticket-termico .t-item + .t-item { border-top: 1px dotted #bbb; }
 .ticket-80 { --t-cuerpo: 12px; --t-grande: 15px; --t-chico: 11px; width: 80mm; padding: 4mm 3.5mm; }
 .ticket-58 { --t-cuerpo: 9.5px; --t-grande: 12px; --t-chico: 8.5px; width: 58mm; padding: 3mm 2.5mm; }
 

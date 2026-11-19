@@ -48,89 +48,96 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
   }, [onCerrar]);
 
   const v = d?.venta;
-  // columnas del detalle: CANT. | DESCRIPCIÓN | ITBIS | VALOR
-  const cols = angosto ? 'grid-cols-[5ch_1fr_6.5ch_8.5ch]' : 'grid-cols-[5.5ch_1fr_8.5ch_10.5ch]';
   const subtotal = v ? Number(v.monto_gravado_i1) + Number(v.monto_gravado_i2) + Number(v.monto_gravado_i3) + Number(v.monto_exento) : 0;
+  const articulos = d ? d.items.reduce((n, it) => n + Number(it.cantidad), 0) : 0;
+  const conVencimiento = v && ['31', '33', '34', '44', '45'].includes(v.tipo_ecf) && v.fecha_vencimiento_sec;
   return (
     <div data-modal="" className="fixed inset-0 z-50 flex items-center justify-center gap-8 bg-slate-900/60 p-6 backdrop-blur-[2px]">
       <style>{`@media print { @page { size: ${impresora.ancho}mm auto; margin: 0; } }`}</style>
       <div className={`ticket-impresion ticket-termico ${angosto ? 'ticket-58' : 'ticket-80'} scroll-fino max-h-full shrink-0 overflow-y-auto shadow-2xl`}>
         {!v ? <div className="py-20 text-center">Cargando…</div> : (
           <>
-            {/* emisor */}
-            <div className="text-center">
+            {/* ───────── 1. emisor */}
+            <header className="text-center">
               <div className="t-grande uppercase">{v.nombre_comercial ?? v.razon_social}</div>
-              {v.nombre_comercial && <div className="uppercase">{v.razon_social}</div>}
-              <div>RNC: {v.rnc}</div>
-              {v.direccion && <div>{v.direccion}</div>}
-              {v.telefono && <div>Tel.: {v.telefono}</div>}
-            </div>
-            <Raya />
-            <div className="text-center font-bold uppercase">{TITULOS[v.tipo_ecf] ?? 'Comprobante Fiscal Electrónico'}</div>
-            <Raya fina />
-            <Fila k="e-NCF:" v={<b>{v.encf}</b>} />
-            {['31', '33', '34', '44', '45'].includes(v.tipo_ecf) && v.fecha_vencimiento_sec && (
-              <Fila k="Válido hasta:" v={new Date(v.fecha_vencimiento_sec).toLocaleDateString('es-DO', { timeZone: 'UTC' })} />
-            )}
-            <Fila k="Fecha:" v={v.fecha} />
-            <Fila k="Caja:" v={`${v.caja_codigo ?? '—'}${v.caja_descripcion ? ` · ${v.caja_descripcion}` : ''}`} />
-            <div>Atendido por: <b>{v.cajero}</b> ({ROLES[v.cajero_rol] ?? v.cajero_rol})</div>
-            {v.cliente_ident && (
-              <>
-                <Raya fina />
-                <Fila k={v.cliente_tipo_ident === 'CEDULA' ? 'Cédula:' : 'RNC comprador:'} v={v.cliente_ident} />
-                <div className="uppercase">Razón social: {v.cliente_nombre}</div>
-              </>
-            )}
-            {v.estado === 'anulada' && <div className="mt-1 border border-black p-0.5 text-center font-bold">ANULADA — VER NOTA DE CRÉDITO</div>}
-            <Raya />
+              {v.nombre_comercial && v.nombre_comercial !== v.razon_social && <div className="uppercase">{v.razon_social}</div>}
+              <div>RNC: <b>{v.rnc}</b></div>
+              {v.direccion && <div className="t-chico">{v.direccion}</div>}
+              {v.telefono && <div className="t-chico">Tel.: {v.telefono}</div>}
+            </header>
 
-            {/* detalle */}
-            <div className={`grid ${cols} gap-x-1 font-bold`}>
-              <span>CANT.</span><span>DESCRIPCIÓN</span><span className="text-right">ITBIS</span><span className="text-right">VALOR</span>
+            {/* ───────── 2. tipo de comprobante */}
+            <div className="t-banda my-2">{TITULOS[v.tipo_ecf] ?? 'Comprobante Fiscal Electrónico'}</div>
+
+            {/* ───────── 3. datos del comprobante */}
+            <Datos filas={[
+              ['e-NCF', <b key="e">{v.encf}</b>],
+              ...(conVencimiento ? [['Vence', new Date(v.fecha_vencimiento_sec).toLocaleDateString('es-DO', { timeZone: 'UTC' })] as [string, React.ReactNode]] : []),
+              ['Fecha', v.fecha],
+              ['Caja', `${v.caja_codigo ?? '—'}${v.caja_descripcion ? ` · ${v.caja_descripcion}` : ''}`],
+              ['Atendió', <span key="a"><b>{v.cajero}</b> ({ROLES[v.cajero_rol] ?? v.cajero_rol})</span>],
+            ]} />
+
+            {/* ───────── 4. cliente */}
+            <Seccion titulo="Cliente" />
+            {v.cliente_ident ? (
+              <Datos filas={[
+                [v.cliente_tipo_ident === 'CEDULA' ? 'Cédula' : 'RNC', <b key="r">{v.cliente_ident}</b>],
+                ['Nombre', <span key="n" className="uppercase">{v.cliente_nombre}</span>],
+              ]} />
+            ) : <div>CONSUMIDOR FINAL</div>}
+            {v.estado === 'anulada' && <div className="t-banda mt-2">Anulada · ver nota de crédito</div>}
+
+            {/* ───────── 5. detalle */}
+            <Seccion titulo="Detalle" />
+            <div className="t-col-titulos grid grid-cols-[1fr_auto_auto] gap-x-2 font-bold">
+              <span>DESCRIPCIÓN</span><span className={`text-right ${angosto ? 'w-[6.5ch]' : 'w-[8.5ch]'}`}>ITBIS</span><span className={`text-right ${angosto ? 'w-[8.5ch]' : 'w-[10.5ch]'}`}>VALOR</span>
             </div>
-            <Raya fina />
+            <div className="t-sep-fino" />
             {d!.items.map((it) => (
-              <div key={it.numero_linea} className="mb-0.5">
-                <div className={`grid ${cols} gap-x-1`}>
-                  <span>{cant(it.cantidad)}</span>
-                  <span className="break-words">{it.nombre}</span>
-                  <span className="text-right">{it.indicador_itbis === 4 || it.indicador_itbis === 3 ? (it.indicador_itbis === 4 ? 'E' : '0.00') : num(it.itbis_item)}</span>
-                  <span className="text-right">{num(it.monto_item)}</span>
+              <div key={it.numero_linea} className="t-item">
+                <div className="font-bold">{it.nombre}</div>
+                <div className="grid grid-cols-[1fr_auto_auto] gap-x-2">
+                  <span className="pl-[1ch]">{cant(it.cantidad)} x {num(it.precio_unitario)}{it.indicador_itbis === 2 ? ' (16%)' : it.indicador_itbis === 4 ? ' (E)' : ''}</span>
+                  <span className={`text-right ${angosto ? 'w-[6.5ch]' : 'w-[8.5ch]'}`}>{it.indicador_itbis === 4 ? 'E' : num(it.itbis_item)}</span>
+                  <span className={`text-right ${angosto ? 'w-[8.5ch]' : 'w-[10.5ch]'}`}>{num(it.monto_item)}</span>
                 </div>
-                <div className={`t-chico grid ${cols} gap-x-1 text-neutral-700`}>
-                  <span />
-                  <span>{num(it.precio_unitario)}{it.indicador_itbis === 2 ? ' · ITBIS 16%' : it.indicador_itbis === 4 ? ' · Exento' : ''}</span>
-                  <span />
-                  <span className="text-right">{Number(it.descuento_monto) > 0 ? `-${num(it.descuento_monto)}` : ''}</span>
-                </div>
+                {Number(it.descuento_monto) > 0 && <div className="t-chico pl-[1ch]">Descuento: -{num(it.descuento_monto)}</div>}
               </div>
             ))}
-            <Raya />
+            <div className="t-sep-fino" />
+            <Fila k="Cantidad de artículos" v={cant(String(articulos))} />
 
-            {/* desglose DGII */}
-            <Fila k="SUBTOTAL" v={num(subtotal)} />
-            {Number(v.total_descuento) > 0 && <Fila k="Descuentos aplicados" v={`-${num(v.total_descuento)}`} />}
+            {/* ───────── 6. totales */}
+            <Seccion titulo="Resumen" />
+            {/* Subtotal antes de descuentos; los montos gravados y exentos ya van netos */}
+            <Fila k="Subtotal" v={num(subtotal + Number(v.total_descuento))} />
+            {Number(v.total_descuento) > 0 && <><Fila k="Descuentos" v={`-${num(v.total_descuento)}`} /><Fila k="Subtotal neto" v={num(subtotal)} /></>}
             {Number(v.monto_exento) > 0 && <Fila k="Monto exento (E)" v={num(v.monto_exento)} />}
-            {Number(v.monto_gravado_i1) > 0 && <Fila k="Monto gravado 18%" v={num(v.monto_gravado_i1)} />}
-            {Number(v.monto_gravado_i2) > 0 && <Fila k="Monto gravado 16%" v={num(v.monto_gravado_i2)} />}
-            {Number(v.monto_gravado_i3) > 0 && <Fila k="Monto gravado 0%" v={num(v.monto_gravado_i3)} />}
+            {Number(v.monto_gravado_i1) > 0 && <Fila k="Gravado 18%" v={num(v.monto_gravado_i1)} />}
+            {Number(v.monto_gravado_i2) > 0 && <Fila k="Gravado 16%" v={num(v.monto_gravado_i2)} />}
+            {Number(v.monto_gravado_i3) > 0 && <Fila k="Gravado 0%" v={num(v.monto_gravado_i3)} />}
             {Number(v.total_itbis1) > 0 && <Fila k="ITBIS 18%" v={num(v.total_itbis1)} />}
             {Number(v.total_itbis2) > 0 && <Fila k="ITBIS 16%" v={num(v.total_itbis2)} />}
-            <Raya fina />
-            <div className="t-grande flex justify-between"><span>TOTAL RD$</span><span>{num(v.monto_total)}</span></div>
-            <Raya />
+            <div className="t-banda t-grande mt-1.5 flex justify-between !text-left"><span>TOTAL RD$</span><span>{num(v.monto_total)}</span></div>
+
+            {/* ───────── 7. pago */}
+            <Seccion titulo="Forma de pago" />
             {d!.pagos.map((p, i) => <Fila key={i} k={`${METODOS[p.metodo] ?? p.metodo}${p.referencia ? ` #${p.referencia}` : ''}`} v={num(p.monto)} />)}
-            {Number(v.cambio) > 0 && <Fila k="Cambio / Devuelta" v={num(v.cambio)} />}
-            <Raya />
-            <div className="flex flex-col items-center gap-1 text-center">
+            {Number(v.cambio) > 0 && <Fila k={<b>Devuelta</b>} v={<b>{num(v.cambio)}</b>} />}
+
+            {/* ───────── 8. validación DGII */}
+            <div className="t-sep mt-2" />
+            <div className="flex flex-col items-center gap-0.5 pt-1 text-center">
               {qr && <img src={qr} alt="QR DGII" style={{ imageRendering: 'pixelated', width: angosto ? '24mm' : '28mm', height: angosto ? '24mm' : '28mm' }} />}
-              <div>Código de seguridad: <b>{v.codigo_seguridad}</b></div>
-              <div>Fecha de firma digital: {v.fecha_firma}</div>
+              <div className="mt-1">Código de seguridad: <b>{v.codigo_seguridad}</b></div>
+              <div className="t-chico">Firma digital: {v.fecha_firma}</div>
+              <div className="t-chico">Consulte este comprobante en dgii.gov.do</div>
             </div>
             {v.ambiente !== 'eCF' && <div className="t-chico mt-2 border border-black p-1 text-center font-bold">AMBIENTE DE PRUEBAS · SIN VALOR FISCAL</div>}
             {reimpresion && <div className="t-chico mt-1 text-center">*** REIMPRESIÓN ***</div>}
-            <div className="mt-2 text-center">{impresora.mensajePie}</div>
+            <div className="t-sep mt-2" />
+            <div className="text-center font-bold">{impresora.mensajePie}</div>
           </>
         )}
       </div>
@@ -157,5 +164,12 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
   );
 }
 
-const Raya = ({ fina }: { fina?: boolean }) => <div className={fina ? 't-sep-fino' : 't-sep'} />;
-const Fila = ({ k, v }: { k: string; v: React.ReactNode }) => <div className="flex justify-between gap-2"><span>{k}</span><span className="text-right">{v}</span></div>;
+const Fila = ({ k, v }: { k: React.ReactNode; v: React.ReactNode }) => <div className="flex justify-between gap-2"><span>{k}</span><span className="text-right">{v}</span></div>;
+/** Título de sección: ─── DETALLE ─── */
+const Seccion = ({ titulo }: { titulo: string }) => <div className="t-seccion"><span>{titulo}</span></div>;
+/** Pares etiqueta : valor con las etiquetas alineadas */
+const Datos = ({ filas }: { filas: [string, React.ReactNode][] }) => (
+  <div className="grid grid-cols-[auto_1fr] gap-x-2">
+    {filas.map(([k, v]) => <React.Fragment key={k}><span>{k}:</span><span className="text-right">{v}</span></React.Fragment>)}
+  </div>
+);

@@ -41,7 +41,7 @@ export function accesoRouter() {
     const p = z.object({
       usuario: z.string().trim().min(1).max(120),
       secreto: z.string().min(1).max(200),
-      modo: z.enum(['caja', 'administrador']),
+      modo: z.enum(['caja', 'administrador']).optional(),   // ya no se pide en el login; se acepta por compatibilidad
     }).safeParse(req.body);
     if (!p.success) return res.status(400).json({ error: 'VALIDACION', mensaje: 'Escribe tu usuario y tu contraseña o PIN' });
     const { usuario, secreto, modo } = p.data;
@@ -67,7 +67,7 @@ export function accesoRouter() {
         });
       }
       // Pestaña "Administrador": administradores y contadores. Pestaña "Caja": cajeros y administradores.
-      const permitido = modo === 'administrador' ? ['administrador', 'contador'].includes(u.rol) : ['cajero', 'administrador'].includes(u.rol);
+      const permitido = !modo ? true : modo === 'administrador' ? ['administrador', 'contador'].includes(u.rol) : ['cajero', 'administrador'].includes(u.rol);
       if (!permitido) {
         return res.status(403).json({
           error: 'MODO',

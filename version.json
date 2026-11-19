@@ -1,7 +1,17 @@
 {
-  "version": "2.3.0",
+  "version": "2.3.1",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.3.1",
+      "fecha": "2026-11-18",
+      "titulo": "Login aún más simple",
+      "cambios": [
+        "Se quita el selector de Perfil: el sistema reconoce solo si eres cajero o administrador",
+        "Las casillas dicen «Digite su usuario o correo» y «Digite su contraseña»",
+        "El cajero entra directo al Punto de Venta; el administrador, a Reportes"
+      ]
+    },
     {
       "version": "2.3.0",
       "fecha": "2026-11-18",

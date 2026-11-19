@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
-  Storefront, CashRegister, ShieldCheck, User, LockKey, Eye, EyeSlash, CircleNotch, Check, CaretDown,
+  Storefront, CashRegister, ShieldCheck, User, LockKey, Eye, EyeSlash, CircleNotch, Check,
   WarningCircle, PaperPlaneTilt, CheckCircle,
 } from '@phosphor-icons/react';
 import { api, ApiError, type Sesion } from '../api';
@@ -8,15 +8,14 @@ import { Boton, Modal } from '../components/ui';
 import { FirmaSistema } from '../components/Marca360';
 import { EnlacesLegales } from '../components/Legal';
 
-export type ModoAcceso = 'caja' | 'administrador';
 export interface Marca {
   nombre: string; logo: string | null;
   razonSocial?: string | null; rnc?: string | null; direccion?: string | null; telefono?: string | null; correo?: string | null;
 }
 
 const RECORDAR = 'pos.ultimoAcceso';
-function leerRecordado(): { usuario: string; modo: ModoAcceso } {
-  try { return { usuario: '', modo: 'administrador', ...JSON.parse(localStorage.getItem(RECORDAR) ?? '{}') }; } catch { return { usuario: '', modo: 'administrador' }; }
+function leerRecordado(): { usuario: string } {
+  try { return { usuario: '', ...JSON.parse(localStorage.getItem(RECORDAR) ?? '{}') }; } catch { return { usuario: '' }; }
 }
 
 /** Logo de la empresa, o un ícono neutro si todavía no se ha subido. */
@@ -30,10 +29,9 @@ export function LogoEmpresa({ marca, tamano = 'md' }: { marca: Marca | null; tam
   );
 }
 
-export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAcceso) => void }) {
+export default function Login({ onEntrar }: { onEntrar: (s: Sesion) => void }) {
   const recordado = leerRecordado();
   const [marca, setMarca] = useState<Marca | null>(null);
-  const [modo, setModo] = useState<ModoAcceso>(recordado.modo);
   const [usuario, setUsuario] = useState(recordado.usuario);
   const [secreto, setSecreto] = useState('');
   const [ver, setVer] = useState(false);
@@ -66,10 +64,10 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
     setErrores({});
     setEstado('cargando');
     try {
-      const s = await api<Sesion>('/auth/entrar', { body: { usuario: usuario.trim(), secreto, modo } });
-      try { localStorage.setItem(RECORDAR, JSON.stringify({ usuario: usuario.trim(), modo })); } catch { /* */ }
+      const s = await api<Sesion>('/auth/entrar', { body: { usuario: usuario.trim(), secreto } });
+      try { localStorage.setItem(RECORDAR, JSON.stringify({ usuario: usuario.trim() })); } catch { /* */ }
       setEstado('exito');
-      setTimeout(() => onEntrar(s, modo), 650);
+      setTimeout(() => onEntrar(s), 650);
     } catch (err) {
       setEstado('listo');
       setSecreto('');
@@ -90,20 +88,10 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
             </div>
 
             <form onSubmit={enviar} noValidate className="mt-6 space-y-3.5">
-              <CampoIcono etiqueta="Perfil" icono={modo === 'caja' ? <CashRegister size={19} /> : <ShieldCheck size={19} />}>
-                <select value={modo} disabled={estado !== 'listo'}
-                  onChange={(e) => { setModo(e.target.value as ModoAcceso); setErrores({}); }}
-                  className="h-11 w-full cursor-pointer appearance-none bg-transparent pl-11 pr-10 text-[15px] text-slate-900 outline-none">
-                  <option value="caja">Caja</option>
-                  <option value="administrador">Administrador</option>
-                </select>
-                <CaretDown size={16} className="pointer-events-none absolute right-3.5 text-slate-400" />
-              </CampoIcono>
-
               <CampoIcono etiqueta="Usuario o correo" icono={<User size={19} />} error={errores.usuario}>
                 <input ref={refUsuario} value={usuario} autoComplete="username" autoCapitalize="none" spellCheck={false}
                   onChange={(e) => { setUsuario(e.target.value); setErrores((x) => ({ ...x, usuario: undefined, general: undefined })); }}
-                  placeholder="Tu usuario o correo" disabled={estado !== 'listo'}
+                  placeholder="Digite su usuario o correo" aria-label="Usuario o correo" disabled={estado !== 'listo'}
                   className="h-11 w-full bg-transparent pl-11 pr-3 text-[15px] text-slate-900 outline-none placeholder:text-slate-400" />
               </CampoIcono>
 
@@ -116,8 +104,8 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
                 }>
                 <input ref={refSecreto} value={secreto} type={ver ? 'text' : 'password'} autoComplete="current-password"
                   onChange={(e) => { setSecreto(e.target.value); setErrores((x) => ({ ...x, secreto: undefined, general: undefined })); }}
-                  placeholder="••••••" disabled={estado !== 'listo'}
-                  className="h-11 w-full bg-transparent pl-11 pr-12 text-[15px] tracking-wide text-slate-900 outline-none placeholder:text-slate-400" />
+                  placeholder="Digite su contraseña" aria-label="Contraseña o PIN" disabled={estado !== 'listo'}
+                  className="h-11 w-full bg-transparent pl-11 pr-12 text-[15px] text-slate-900 outline-none placeholder:text-slate-400" />
               </CampoIcono>
 
               {errores.general && (
@@ -127,7 +115,7 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
               )}
 
               <button type="submit" disabled={estado !== 'listo'}
-                className={`!mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-sm transition
+                className={`!mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-sm transition
                   ${estado === 'exito' ? 'bg-emerald-500 shadow-emerald-500/25' : 'bg-blue-600 shadow-blue-600/25 hover:bg-blue-700 active:bg-blue-800'}`}>
                 {estado === 'cargando' && <><CircleNotch size={20} className="animate-spin" /> Verificando…</>}
                 {estado === 'exito' && <><Check size={20} weight="bold" className="aparecer-check" /> ¡Bienvenido!</>}
@@ -150,7 +138,7 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
         <FirmaSistema className="justify-center" />
       </footer>
 
-      {solicitar && <SolicitarAcceso modoInicial={modo} onCerrar={() => setSolicitar(false)} />}
+      {solicitar && <SolicitarAcceso onCerrar={() => setSolicitar(false)} />}
     </div>
   );
 }
@@ -158,7 +146,7 @@ export default function Login({ onEntrar }: { onEntrar: (s: Sesion, modo: ModoAc
 function CampoIcono({ etiqueta, icono, error, accion, children }: { etiqueta: string; icono: ReactNode; error?: string; accion?: ReactNode; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{etiqueta}</span>
+      <span className="sr-only">{etiqueta}</span>
       <span className={`relative flex items-center rounded-xl border bg-white transition focus-within:ring-4
         ${error ? 'border-red-400 focus-within:ring-red-500/10' : 'border-slate-300 focus-within:border-blue-500 focus-within:ring-blue-500/10'}`}>
         <span className={`pointer-events-none absolute left-3.5 ${error ? 'text-red-400' : 'text-slate-400'}`}>{icono}</span>
@@ -171,8 +159,8 @@ function CampoIcono({ etiqueta, icono, error, accion, children }: { etiqueta: st
 }
 
 // ---------------------------------------------------------------- solicitar acceso
-function SolicitarAcceso({ modoInicial, onCerrar }: { modoInicial: ModoAcceso; onCerrar: () => void }) {
-  const [f, setF] = useState({ nombre: '', contacto: '', rol: modoInicial === 'administrador' ? 'administrador' : 'cajero', nota: '' });
+function SolicitarAcceso({ onCerrar }: { onCerrar: () => void }) {
+  const [f, setF] = useState({ nombre: '', contacto: '', rol: 'cajero', nota: '' });
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
   const [enviada, setEnviada] = useState(false);

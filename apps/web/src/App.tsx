@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { guardarSesion, leerSesion, type Sesion } from './api';
 import { ProveedorApp, type Ruta } from './contexto';
-import Login, { type ModoAcceso } from './screens/Login';
+import Login from './screens/Login';
 import Shell, { MODULOS } from './layout/Shell';
 import Avisos from './components/Avisos';
 
@@ -26,12 +26,12 @@ export default function App() {
   }, [salir]);
 
   // Al entrar, cada rol cae en su módulo natural
-  // Pestaña Caja → Punto de Venta (si no hay caja abierta, ahí mismo pide abrirla).
-  // Pestaña Administrador → Reportes, el tablero del negocio.
-  function entrar(s: Sesion, modo: ModoAcceso) {
+  // Cajero → Punto de Venta (si no hay caja abierta, ahí mismo pide abrirla).
+  // Administrador y contador → Reportes, el tablero del negocio.
+  function entrar(s: Sesion) {
     guardarSesion(s);
     setSesion(s);
-    ir(modo === 'caja' ? 'pos' : 'reportes');
+    ir(s.usuario.rol === 'cajero' ? 'pos' : 'reportes');
   }
 
   return (

@@ -1,7 +1,18 @@
 {
-  "version": "2.4.0",
+  "version": "2.4.1",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.4.1",
+      "fecha": "2026-11-19",
+      "titulo": "Ticket con letra de impresora térmica",
+      "cambios": [
+        "Letra estrecha de ancho fijo estilo Font B (Share Tech Mono) con números tabulares: columnas perfectamente alineadas",
+        "Cuerpo de 11.5 px, encabezado y total de 14 px en negrita, interlineado compacto",
+        "Ancho físico de 80 mm o 58 mm: la vista previa, la impresora y el PDF salen idénticos",
+        "Las fuentes vienen dentro del sistema: no necesitan internet"
+      ]
+    },
     {
       "version": "2.4.0",
       "fecha": "2026-11-19",

@@ -4,8 +4,9 @@ import { Printer, ArrowRight, CheckCircle } from '@phosphor-icons/react';
 import { api } from '../api';
 import { useApp } from '../contexto';
 import { num } from '../util';
-import '@fontsource/jetbrains-mono/400.css';
-import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/share-tech-mono/400.css';
+import '@fontsource/courier-prime/400.css';
+import '@fontsource/courier-prime/700.css';
 import { Boton } from './ui';
 
 interface DatosTicket {
@@ -49,25 +50,24 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
 
   const v = d?.venta;
   // columnas del detalle: CANT. | DESCRIPCIÓN | ITBIS | VALOR
-  const cols = angosto ? 'grid-cols-[4.6ch_1fr_6.5ch_8ch]' : 'grid-cols-[5.4ch_1fr_7.5ch_9.5ch]';
+  const cols = angosto ? 'grid-cols-[5ch_1fr_7ch_8.5ch]' : 'grid-cols-[5.5ch_1fr_8.5ch_10.5ch]';
   const subtotal = v ? Number(v.monto_gravado_i1) + Number(v.monto_gravado_i2) + Number(v.monto_gravado_i3) + Number(v.monto_exento) : 0;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center gap-8 bg-slate-900/60 p-6 backdrop-blur-[2px]">
-      <style>{`@media print { @page { size: ${impresora.ancho}mm auto; margin: 0; } .ticket-impresion { width: ${impresora.ancho}mm !important; } }`}</style>
-      <div style={{ fontFamily: "'JetBrains Mono', 'Courier Prime', 'Roboto Mono', monospace" }}
-        className={`ticket-impresion scroll-fino max-h-full overflow-y-auto bg-white leading-[1.4] text-black shadow-2xl [font-variant-numeric:tabular-nums] ${angosto ? 'w-[230px] px-2.5 py-4 text-[9.5px]' : 'w-[310px] px-4 py-5 text-[11px]'}`}>
+      <style>{`@media print { @page { size: ${impresora.ancho}mm auto; margin: 0; } }`}</style>
+      <div className={`ticket-impresion ticket-termico ${angosto ? 'ticket-58' : 'ticket-80'} scroll-fino max-h-full shrink-0 overflow-y-auto shadow-2xl`}>
         {!v ? <div className="py-20 text-center">Cargando…</div> : (
           <>
             {/* emisor */}
             <div className="text-center">
-              <div className="text-[1.3em] font-bold uppercase leading-tight">{v.nombre_comercial ?? v.razon_social}</div>
+              <div className="t-grande uppercase">{v.nombre_comercial ?? v.razon_social}</div>
               {v.nombre_comercial && <div className="uppercase">{v.razon_social}</div>}
               <div>RNC: {v.rnc}</div>
               {v.direccion && <div>{v.direccion}</div>}
               {v.telefono && <div>Tel.: {v.telefono}</div>}
             </div>
             <Raya />
-            <div className="text-center font-bold uppercase leading-tight">{TITULOS[v.tipo_ecf] ?? 'Comprobante Fiscal Electrónico'}</div>
+            <div className="text-center font-bold uppercase">{TITULOS[v.tipo_ecf] ?? 'Comprobante Fiscal Electrónico'}</div>
             <Raya fina />
             <Fila k="e-NCF:" v={<b>{v.encf}</b>} />
             {['31', '33', '34', '44', '45'].includes(v.tipo_ecf) && v.fecha_vencimiento_sec && (
@@ -99,7 +99,7 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
                   <span className="text-right">{it.indicador_itbis === 4 || it.indicador_itbis === 3 ? (it.indicador_itbis === 4 ? 'E' : '0.00') : num(it.itbis_item)}</span>
                   <span className="text-right">{num(it.monto_item)}</span>
                 </div>
-                <div className={`grid ${cols} gap-x-1 text-[0.92em] text-neutral-700`}>
+                <div className={`t-chico grid ${cols} gap-x-1 text-neutral-700`}>
                   <span />
                   <span>@ {num(it.precio_unitario)}{it.indicador_itbis === 2 ? ' · ITBIS 16%' : it.indicador_itbis === 4 ? ' · Exento' : ''}</span>
                   <span />
@@ -119,18 +119,18 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
             {Number(v.total_itbis1) > 0 && <Fila k="ITBIS 18%" v={num(v.total_itbis1)} />}
             {Number(v.total_itbis2) > 0 && <Fila k="ITBIS 16%" v={num(v.total_itbis2)} />}
             <Raya fina />
-            <div className="flex justify-between text-[1.3em] font-bold"><span>TOTAL RD$</span><span>{num(v.monto_total)}</span></div>
+            <div className="t-grande flex justify-between"><span>TOTAL RD$</span><span>{num(v.monto_total)}</span></div>
             <Raya />
             {d!.pagos.map((p, i) => <Fila key={i} k={`${METODOS[p.metodo] ?? p.metodo}${p.referencia ? ` #${p.referencia}` : ''}`} v={num(p.monto)} />)}
             {Number(v.cambio) > 0 && <Fila k="Cambio / Devuelta" v={num(v.cambio)} />}
             <Raya />
             <div className="flex flex-col items-center gap-1 text-center">
-              {qr && <img src={qr} alt="QR DGII" className={angosto ? 'size-[96px]' : 'size-[116px]'} style={{ imageRendering: 'pixelated' }} />}
+              {qr && <img src={qr} alt="QR DGII" style={{ imageRendering: 'pixelated', width: angosto ? '24mm' : '28mm', height: angosto ? '24mm' : '28mm' }} />}
               <div>Código de seguridad: <b>{v.codigo_seguridad}</b></div>
               <div>Fecha de firma digital: {v.fecha_firma}</div>
             </div>
-            {v.ambiente !== 'eCF' && <div className="mt-2 border border-black p-1 text-center text-[0.9em] font-bold">AMBIENTE DE PRUEBAS · SIN VALOR FISCAL</div>}
-            {reimpresion && <div className="mt-1 text-center text-[0.9em]">*** REIMPRESIÓN ***</div>}
+            {v.ambiente !== 'eCF' && <div className="t-chico mt-2 border border-black p-1 text-center font-bold">AMBIENTE DE PRUEBAS · SIN VALOR FISCAL</div>}
+            {reimpresion && <div className="t-chico mt-1 text-center">*** REIMPRESIÓN ***</div>}
             <div className="mt-2 text-center">{impresora.mensajePie}</div>
           </>
         )}
@@ -158,5 +158,5 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
   );
 }
 
-const Raya = ({ fina }: { fina?: boolean }) => <div className={`${fina ? 'my-1 border-dotted' : 'my-1.5 border-dashed'} border-t border-black`} />;
+const Raya = ({ fina }: { fina?: boolean }) => <div className={fina ? 't-sep-fino' : 't-sep'} />;
 const Fila = ({ k, v }: { k: string; v: React.ReactNode }) => <div className="flex justify-between gap-2"><span>{k}</span><span className="text-right">{v}</span></div>;

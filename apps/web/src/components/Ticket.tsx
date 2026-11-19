@@ -41,8 +41,8 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === 'Escape') onCerrar();
-      if (e.key.toLowerCase() === 'p' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); window.print(); }
+      if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); onCerrar(); }
+      if (e.key.toLowerCase() === 'p' || e.key.toLowerCase() === 'i') { e.preventDefault(); window.print(); }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
@@ -53,7 +53,7 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
   const cols = angosto ? 'grid-cols-[5ch_1fr_7ch_8.5ch]' : 'grid-cols-[5.5ch_1fr_8.5ch_10.5ch]';
   const subtotal = v ? Number(v.monto_gravado_i1) + Number(v.monto_gravado_i2) + Number(v.monto_gravado_i3) + Number(v.monto_exento) : 0;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center gap-8 bg-slate-900/60 p-6 backdrop-blur-[2px]">
+    <div data-modal="" className="fixed inset-0 z-50 flex items-center justify-center gap-8 bg-slate-900/60 p-6 backdrop-blur-[2px]">
       <style>{`@media print { @page { size: ${impresora.ancho}mm auto; margin: 0; } }`}</style>
       <div className={`ticket-impresion ticket-termico ${angosto ? 'ticket-58' : 'ticket-80'} scroll-fino max-h-full shrink-0 overflow-y-auto shadow-2xl`}>
         {!v ? <div className="py-20 text-center">Cargando…</div> : (
@@ -152,7 +152,7 @@ export default function Ticket({ ventaId, onCerrar, reimpresion }: { ventaId: st
         </div>
         <Boton tamano="lg" onClick={() => window.print()} icono={<Printer size={18} />}>Imprimir ticket ({impresora.ancho} mm)</Boton>
         <Boton tamano="lg" variante="primario" onClick={onCerrar}>{reimpresion ? 'Cerrar' : 'Nueva venta'} <ArrowRight size={18} weight="bold" /></Boton>
-        <p className="text-center text-xs text-slate-300">Enter = continuar · Ctrl+P = imprimir</p>
+        <p className="text-center text-xs text-slate-300">Enter = nueva venta · P = imprimir · Esc = cerrar</p>
       </div>
     </div>
   );

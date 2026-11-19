@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MagnifyingGlass, UserPlus, User, Buildings, Check, CheckCircle, WarningCircle } from '@phosphor-icons/react';
 import { api, ApiError, type Cliente } from '../api';
 import { avisar, cedulaValida, formatoIdent, rncValido } from '../util';
-import { Boton, Campo, Entrada, Insignia, Interruptor, Modal } from './ui';
+import { Tecla, Boton, Campo, Entrada, Insignia, Interruptor, Modal } from './ui';
 
 export type Requisito = 'contribuyente' | 'rnc' | null;
 
@@ -12,6 +12,8 @@ export default function SelectorCliente({ actual, requisito, onElegir, onCerrar 
   const [q, setQ] = useState('');
   const [lista, setLista] = useState<Cliente[]>([]);
   const [nuevo, setNuevo] = useState(false);
+  const [sel, setSel] = useState(0);
+  const caja = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => api<Cliente[]>(`/clientes?q=${encodeURIComponent(q)}`).then(setLista).catch(() => {}), 150);
@@ -20,6 +22,27 @@ export default function SelectorCliente({ actual, requisito, onElegir, onCerrar 
 
   const cumple = (c: Cliente) =>
     requisito === 'contribuyente' ? c.es_contribuyente : requisito === 'rnc' ? c.tipo_identificacion === 'RNC' : true;
+  const GENERICO = '00000000-0000-0000-0000-000000000001';
+  const permitido = (c: Cliente) => (c.id === GENERICO ? !requisito : cumple(c));
+  // Al cambiar la lista, marca el primero que se puede elegir
+  useEffect(() => { setSel(Math.max(0, lista.findIndex(permitido))); }, [lista]); // eslint-disable-line
+
+  function teclas(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const paso = e.key === 'ArrowDown' ? 1 : -1;
+      let n = sel;
+      for (let i = 0; i < lista.length; i++) { n = (n + paso + lista.length) % lista.length; if (permitido(lista[n])) break; }
+      setSel(n);
+      caja.current?.children[n]?.scrollIntoView({ block: 'nearest' });
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const c = lista[sel];
+      if (c && permitido(c)) onElegir(c.id === GENERICO ? null : c);
+    }
+    if (e.key === 'F2') { e.preventDefault(); setNuevo(true); }
+  }
 
   return (
     <Modal titulo={nuevo ? 'Registrar cliente' : 'Seleccionar cliente'} onCerrar={onCerrar} ancho="max-w-xl"
@@ -29,16 +52,16 @@ export default function SelectorCliente({ actual, requisito, onElegir, onCerrar 
         <>
           <div className="relative">
             <MagnifyingGlass size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Entrada autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre, RNC o cédula" className="h-11 pl-10" />
+            <Entrada autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={teclas} placeholder="Nombre, RNC o cédula · ↑↓ elegir · Enter confirmar" className="h-10 pl-10" />
           </div>
-          <div className="mt-3 space-y-1">
-            {lista.map((c) => {
+          <div ref={caja} className="mt-3 max-h-[50vh] space-y-1 overflow-y-auto">
+            {lista.map((c, i) => {
               const generico = c.id === '00000000-0000-0000-0000-000000000001';
               const ok = generico ? !requisito : cumple(c);
               const elegido = actual?.id === c.id || (!actual && generico);
               return (
-                <button key={c.id} disabled={!ok} onClick={() => onElegir(generico ? null : c)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent ${elegido ? 'bg-blue-50 ring-1 ring-blue-200' : ''}`}>
+                <button key={c.id} disabled={!ok} tabIndex={-1} onClick={() => onElegir(generico ? null : c)} onMouseEnter={() => ok && setSel(i)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition disabled:opacity-40 ${i === sel && ok ? 'bg-amber-50 ring-2 ring-amber-400/50' : elegido ? 'bg-blue-50 ring-1 ring-blue-200' : 'hover:bg-slate-50'}`}>
                   <span className={`grid size-9 place-items-center rounded-full ${c.tipo_identificacion === 'RNC' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
                     {c.tipo_identificacion === 'RNC' ? <Buildings size={18} /> : <User size={18} />}
                   </span>
@@ -54,7 +77,7 @@ export default function SelectorCliente({ actual, requisito, onElegir, onCerrar 
             })}
             {!lista.length && <p className="py-6 text-center text-sm text-slate-500">No hay clientes que coincidan.</p>}
           </div>
-          <Boton variante="primario" className="mt-4 w-full" icono={<UserPlus size={18} />} onClick={() => setNuevo(true)}>Registrar cliente nuevo</Boton>
+          <Boton variante="secundario" className="mt-3 w-full" icono={<UserPlus size={17} />} onClick={() => setNuevo(true)}>Registrar cliente nuevo <Tecla>F2</Tecla></Boton>
         </>
       )}
     </Modal>

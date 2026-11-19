@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import {
   ShoppingCart, Receipt, CashRegister, Package, AddressBook, CloudCheck, ChartBar, GearSix,
-  SidebarSimple, SignOut, CaretDown, type IconProps,
+  SidebarSimple, SignOut, CaretDown, Keyboard, type IconProps,
 } from '@phosphor-icons/react';
 import { useApp, type Ruta } from '../contexto';
 import IndicadorDGII from '../components/IndicadorDGII';
 import { CampanaSolicitudes } from '../components/Solicitudes';
 import { LogoEmpresa } from '../screens/Login';
 import { FirmaSistema } from '../components/Marca360';
+import Atajos from '../components/Atajos';
+import { Tecla } from '../components/ui';
 import PuntoVenta from '../pages/PuntoVenta';
 import Ventas from '../pages/Ventas';
 import Caja from '../pages/Caja';
@@ -35,6 +37,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
   const { usuario, caja, ir, salir, fiscal, actualizacionDisponible, version, marca } = useApp();
   const [colapsado, setColapsado] = useState(() => { try { return localStorage.getItem('pos.sidebar') === '1'; } catch { return false; } });
   const [menu, setMenu] = useState(false);
+  const [ayuda, setAyuda] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const visibles = MODULOS.filter((m) => m.roles.includes(usuario.rol));
@@ -46,6 +49,32 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
+
+  // ------------------------------------------------ atajos globales de teclado
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'F1') { e.preventDefault(); setAyuda((a) => !a); return; }
+      if (document.querySelector('[data-modal]')) return;            // con una ventana abierta manda la ventana
+      if (e.altKey && /^[1-9]$/.test(e.key)) {
+        const m = visibles[Number(e.key) - 1];
+        if (m) { e.preventDefault(); ir(m.id); }
+        return;
+      }
+      const tecla = e.key.toLowerCase();
+      if (e.altKey && tecla === 'n') {
+        const b = [...document.querySelectorAll<HTMLButtonElement>('main [data-atajo="nuevo"]:not(:disabled)')].find((x) => x.offsetParent);
+        if (b) { e.preventDefault(); b.click(); }
+        return;
+      }
+      if (e.altKey && tecla === 'q') { e.preventDefault(); salir(); return; }
+      if (e.key === 'F2' && ruta !== 'pos') {
+        const b = [...document.querySelectorAll<HTMLInputElement>('main [data-buscar]')].find((x) => x.offsetParent);
+        if (b) { e.preventDefault(); b.focus(); b.select(); }
+      }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [visibles, ir, salir, ruta]);
 
   const negocio = marca?.nombre ?? fiscal?.emisor?.nombre_comercial ?? fiscal?.emisor?.razon_social ?? 'Punto de Venta';
   const iniciales = usuario.nombre.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -69,7 +98,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
           {visibles.map((m, i) => {
             const activo = m.id === actual.id;
             return (
-              <button key={m.id} onClick={() => ir(m.id)} title={colapsado ? m.nombre : undefined}
+              <button key={m.id} onClick={() => ir(m.id)} title={`${m.nombre} (Alt+${i + 1})`}
                 className={`group flex w-full items-center gap-3 rounded-lg text-left transition
                   ${colapsado ? 'h-10 justify-center' : 'px-2.5 py-1.5'}
                   ${activo ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
@@ -83,7 +112,7 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
                       <span className="truncate">{m.nombre}</span>
                       {m.id === 'configuracion' && actualizacionDisponible
                         ? <span className="rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-white">NUEVA</span>
-                        : <span className={`num text-[11px] ${activo ? 'text-blue-200' : 'text-slate-600'}`}>{i + 1}</span>}
+                        : <span className={`num text-[10px] ${activo ? 'text-blue-200' : 'text-slate-600'}`}>Alt+{i + 1}</span>}
                     </span>
                     <span className={`block truncate text-[11px] leading-tight ${activo ? 'text-blue-100/80' : 'text-slate-500'}`}>{m.corto}</span>
                   </span>
@@ -127,6 +156,10 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
             </div>
           </div>
           <IndicadorDGII />
+          <button onClick={() => setAyuda(true)} title="Atajos de teclado (F1)"
+            className="hidden items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 md:flex">
+            <Keyboard size={18} /> Atajos <Tecla>F1</Tecla>
+          </button>
           {usuario.rol === 'administrador' && <CampanaSolicitudes />}
           <div ref={menuRef} className="relative">
             <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2.5 hover:bg-slate-100">
@@ -140,13 +173,14 @@ export default function Shell({ ruta }: { ruta: Ruta }) {
             {menu && (
               <div className="animar-entrada absolute right-0 top-12 z-40 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
                 <button onClick={salir} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
-                  <SignOut size={18} /> Cerrar sesión
+                  <SignOut size={18} /> Cerrar sesión <span className="ml-auto"><Tecla>Alt+Q</Tecla></span>
                 </button>
               </div>
             )}
           </div>
         </header>
 
+        {ayuda && <Atajos onCerrar={() => setAyuda(false)} />}
         <main className={`min-h-0 flex-1 ${esPOS ? 'overflow-hidden' : 'scroll-fino overflow-y-auto p-4 lg:p-6'}`}>
           <div className={esPOS ? 'h-full' : 'mx-auto max-w-[1400px]'}>
             <actual.Pagina key={actual.id} />

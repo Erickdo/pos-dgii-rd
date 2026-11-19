@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Barcode, MagnifyingGlass, Minus, Plus, Trash, User, X, Package, Percent, Buildings, Warning, ShoppingCart, PencilSimple,
   Money, CreditCard, Bank, HandCoins, Stack, CircleNotch, Receipt,
@@ -13,7 +13,7 @@ import Cobro from '../components/Cobro';
 import Ticket from '../components/Ticket';
 import SelectorCliente, { type Requisito } from '../components/SelectorCliente';
 import AbrirCaja from '../components/AbrirCaja';
-import { Boton, Campo, Entrada, Modal } from '../components/ui';
+import { Boton, Campo, Entrada, Modal, Tecla } from '../components/ui';
 
 interface Linea { p: Producto; cantidad: number; descPct?: number; descMonto?: number }
 
@@ -59,6 +59,11 @@ function Facturar() {
   const [metodo, setMetodo] = useState<MetodoPago | 'mixto'>('efectivo');
   const [recibido, setRecibido] = useState('');
   const [referencia, setReferencia] = useState('');
+  const [sel, setSel] = useState(-1);                 // producto marcado con las flechas
+  const [mult, setMult] = useState<number | null>(null); // cantidad pendiente: "3*"
+  const [activa, setActiva] = useState<string | null>(null); // línea marcada del carrito
+  const grilla = useRef<HTMLDivElement>(null);
+  const campoPago = useRef<HTMLInputElement>(null);
   const buscador = useRef<HTMLInputElement>(null);
   const finCarrito = useRef<HTMLDivElement>(null);
 
@@ -79,6 +84,7 @@ function Facturar() {
 
   // ---------------------------------------------------------------- carrito
   const agregar = useCallback((p: Producto, delta = 1) => {
+    setActiva(p.id);
     setCarrito((c) => {
       const i = c.findIndex((l) => l.p.id === p.id);
       const nueva = (i >= 0 ? c[i].cantidad : 0) + delta;
@@ -86,12 +92,15 @@ function Facturar() {
         avisar(`Solo quedan ${Number(p.stock_actual)} unidades de ${p.nombre}`, 'error');
         return c;
       }
-      if (nueva <= 0) return c.filter((l) => l.p.id !== p.id);
+      if (nueva <= 0) { setActiva(c.filter((l) => l.p.id !== p.id).at(-1)?.p.id ?? null); return c.filter((l) => l.p.id !== p.id); }
       if (i >= 0) return c.map((l, j) => (j === i ? { ...l, cantidad: nueva } : l));
       return [...c, { p, cantidad: nueva }];
     });
-    setTimeout(() => finCarrito.current?.scrollIntoView({ block: 'nearest' }), 30);
+    setTimeout(() => document.getElementById(`linea-${p.id}`)?.scrollIntoView({ block: 'nearest' }), 30);
   }, []);
+  /** Agrega usando la cantidad pendiente (3*) si la hay. */
+  const agregarConCantidad = useCallback((p: Producto) => { agregar(p, mult ?? 1); setMult(null); }, [agregar, mult]);
+  useEffect(() => { setSel(-1); }, [q, cat]);
 
   const tasaDe = (p: Producto) => (tipo === '44' ? 0 : TASA[p.indicador_itbis]);
   const baseDe = (l: Linea) => redondear2(Number(l.p.precio_venta) * l.cantidad);
@@ -133,22 +142,83 @@ function Facturar() {
   const porCodigo = useCallback(async (codigo: string) => {
     try {
       const r = await api<{ exacto: boolean; productos: Producto[] }>(`/productos?q=${encodeURIComponent(codigo)}`);
-      if (r.exacto && r.productos[0]) { agregar(r.productos[0]); setQ(''); }
+      if (r.exacto && r.productos[0]) { agregarConCantidad(r.productos[0]); setQ(''); }
       else avisar(`Código ${codigo} no encontrado`, 'error');
     } catch (e) { avisar((e as Error).message, 'error'); }
-  }, [agregar]);
+  }, [agregarConCantidad]);
   useBarcodeScanner((c) => { if (!hayModal) porCodigo(c); });
+
+  const lineaActiva = carrito.find((l) => l.p.id === activa) ?? carrito.at(-1);
+  const enBuscador = () => document.activeElement === buscador.current;
+  const ORDEN_TIPOS: TipoComprobante[] = ['32', '31', '44', '45'];
+  const ORDEN_METODOS: (MetodoPago | 'mixto')[] = ['efectivo', 'tarjeta', 'transferencia', 'credito', 'mixto'];
+  const enfocarPago = () => {
+    const f = () => { campoPago.current?.focus(); campoPago.current?.select(); };
+    if (campoPago.current) f(); else setTimeout(f, 20);   // si el campo aún no existe (cambio de forma de pago), espera a que aparezca
+  };
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (hayModal) return;
-      if (e.key === 'F2') { e.preventDefault(); buscador.current?.focus(); }
-      if (e.key === 'F9') { e.preventDefault(); iniciarCobro(); }
-      if (e.key === 'Escape') setQ('');
+      if (hayModal || document.querySelector('[data-modal]')) return;
+      const k = e.key;
+      const t = e.target as HTMLElement;
+      const escribiendo = (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') && t !== buscador.current;
+      const fn: Record<string, () => void> = {
+        F2: () => { buscador.current?.focus(); buscador.current?.select(); },
+        F3: () => setSelCliente(true),
+        F4: () => elegirTipo(ORDEN_TIPOS[(ORDEN_TIPOS.indexOf(tipo) + 1) % ORDEN_TIPOS.length]),
+        F6: () => { if (metodo === 'efectivo' || metodo === 'tarjeta' || metodo === 'transferencia') enfocarPago(); },
+        F7: () => { const m = ORDEN_METODOS[(ORDEN_METODOS.indexOf(metodo) + 1) % ORDEN_METODOS.length]; setMetodo(m); setReferencia(''); if (m === 'tarjeta' || m === 'transferencia') setTimeout(() => campoPago.current?.focus(), 20); else buscador.current?.focus(); },
+        F8: () => { if (carrito.length) setDescGlobal(true); },
+        F9: () => iniciarCobro(),
+        Insert: () => { if (lineaActiva) setEditarLinea(lineaActiva.p.id); },
+        PageDown: () => { const ids = ['', ...categorias.map((c) => c.id)]; setQ(''); setCat(ids[(ids.indexOf(cat) + 1) % ids.length]); },
+        PageUp: () => { const ids = ['', ...categorias.map((c) => c.id)]; setQ(''); setCat(ids[(ids.indexOf(cat) - 1 + ids.length) % ids.length]); },
+      };
+      if (fn[k] && !(escribiendo && (k === 'PageUp' || k === 'PageDown' || k === 'Insert'))) { e.preventDefault(); fn[k](); return; }
+      if (escribiendo) return;
+      // Teclas sobre el carrito (solo si el buscador está vacío, para no estorbar al escribir)
+      if (q === '' && lineaActiva) {
+        if (k === '+' ) { e.preventDefault(); agregar(lineaActiva.p, 1); return; }
+        if (k === '-') { e.preventDefault(); agregar(lineaActiva.p, -1); return; }
+        if (k === 'Delete' && !e.ctrlKey) { e.preventDefault(); agregar(lineaActiva.p, -lineaActiva.cantidad); return; }
+      }
+      if (k === 'Delete' && e.ctrlKey && carrito.length) { e.preventDefault(); limpiar(); avisar('Venta vaciada', 'info'); return; }
+      if (k === 'Escape') { setQ(''); setMult(null); buscador.current?.focus(); return; }
+      // Cualquier letra o número fuera de un campo va al buscador
+      if (!enBuscador() && k.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey && /[\p{L}\p{N} *]/u.test(k)) buscador.current?.focus();
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   });
+  useEffect(() => { buscador.current?.focus(); }, []);
+
+  /** Flechas, Enter y * dentro del buscador */
+  function teclasBuscador(e: React.KeyboardEvent<HTMLInputElement>) {
+    const k = e.key;
+    if (k === '*' && /^\d+(\.\d+)?$/.test(q.trim()) && Number(q) > 0) { e.preventDefault(); setMult(Number(q)); setQ(''); return; }
+    if (k === 'Backspace' && q === '' && mult) { setMult(null); return; }
+    if (k === 'Enter') {
+      e.preventDefault();
+      if (sel >= 0 && productos[sel]) { agregarConCantidad(productos[sel]); if (q) setQ(''); return; }
+      if (q.trim() && productos.length === 1 && !/^\d{6,}$/.test(q.trim())) { agregarConCantidad(productos[0]); setQ(''); return; }
+      if (q.trim()) porCodigo(q.trim());
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(k) || !productos.length) return;
+    if ((k === 'ArrowLeft' || k === 'ArrowRight') && sel < 0) return;   // con nada marcado, ← → mueven el cursor del texto
+    e.preventDefault();
+    const hijos = [...(grilla.current?.children ?? [])] as HTMLElement[];
+    const top0 = hijos[0]?.offsetTop ?? 0;
+    const cols = Math.max(1, hijos.filter((h) => h.offsetTop === top0).length);
+    let n = sel;
+    if (k === 'ArrowDown') n = sel < 0 ? 0 : Math.min(productos.length - 1, sel + cols);
+    if (k === 'ArrowUp') n = sel - cols < 0 ? -1 : sel - cols;
+    if (k === 'ArrowRight') n = Math.min(productos.length - 1, sel + 1);
+    if (k === 'ArrowLeft') n = Math.max(0, sel - 1);
+    setSel(n);
+    if (n >= 0) hijos[n]?.scrollIntoView({ block: 'nearest' });
+  }
 
   // ---------------------------------------------------------------- cobro
   const itemsApi = () => carrito.map((l) => {
@@ -207,17 +277,18 @@ function Facturar() {
         <div className="space-y-2.5 border-b border-slate-200 bg-white px-4 py-3">
           <div className="relative">
             <MagnifyingGlass size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input ref={buscador} value={q} onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && q.trim()) { e.preventDefault(); porCodigo(q.trim()); } }}
-              placeholder="Buscar por nombre, código o escanear código de barras…"
-              className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-20 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10" />
+            {mult && <span className="num absolute left-8 top-1/2 -translate-y-1/2 rounded bg-blue-600 px-1.5 text-xs font-bold text-white">×{mult}</span>}
+            <input ref={buscador} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={teclasBuscador}
+              placeholder={mult ? 'Ahora elige el producto…' : 'Buscar por nombre o código · ↑↓ elegir · Enter agregar · 3* cantidad'}
+              className={`h-10 w-full rounded-lg border border-slate-300 bg-white ${mult ? 'pl-[4.5rem]' : 'pl-9'} pr-20 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10`} />
             <div className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center gap-2">
               {q ? <button onClick={() => setQ('')} className="text-slate-400 hover:text-slate-600"><X size={16} /></button> : <Barcode size={19} className="text-slate-300" />}
               <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-medium text-slate-500">F2</kbd>
             </div>
           </div>
           {!q && (
-            <div className="scroll-fino flex gap-1.5 overflow-x-auto pb-0.5">
+            <div className="scroll-fino flex items-center gap-1.5 overflow-x-auto pb-0.5">
+              <span className="mr-0.5 flex shrink-0 gap-0.5" title="Categoría anterior / siguiente"><Tecla>RePág</Tecla><Tecla>AvPág</Tecla></span>
               {[{ id: '', nombre: 'Todos', productos: 0 }, ...categorias].map((c) => (
                 <button key={c.id} onClick={() => setCat(c.id)}
                   className={`h-7 shrink-0 rounded-full px-3 text-xs font-medium transition
@@ -229,16 +300,16 @@ function Facturar() {
           )}
         </div>
 
-        <div className="scroll-fino grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(138px,1fr))] gap-2.5 overflow-y-auto bg-slate-50 p-4">
-          {productos.map((p) => {
+        <div ref={grilla} className="scroll-fino grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(138px,1fr))] gap-2.5 overflow-y-auto bg-slate-50 p-4">
+          {productos.map((p, i) => {
             const enCarrito = carrito.find((l) => l.p.id === p.id)?.cantidad ?? 0;
             const agotado = p.maneja_inventario && Number(p.stock_actual) <= 0;
             const bajo = p.maneja_inventario && !agotado && Number(p.stock_actual) <= Number(p.stock_minimo);
             return (
-              <button key={p.id} onClick={() => agregar(p)} disabled={agotado}
+              <button key={p.id} onClick={() => agregarConCantidad(p)} disabled={agotado} tabIndex={-1}
                 className={`group relative flex h-[92px] flex-col justify-between rounded-lg border bg-white p-2.5 text-left transition
                   hover:border-blue-400 hover:shadow-sm active:scale-[.98] disabled:opacity-45
-                  ${enCarrito ? 'border-blue-500 ring-2 ring-blue-500/15' : 'border-slate-200'}`}>
+                  ${i === sel ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-400/40' : enCarrito ? 'border-blue-500 ring-2 ring-blue-500/15' : 'border-slate-200'}`}>
                 <div className="min-w-0">
                   <div className="truncate text-[10px] font-medium uppercase tracking-wide text-slate-400">{p.categoria ?? 'General'}</div>
                   <div className="line-clamp-2 text-[13px] font-semibold leading-tight text-slate-900">{p.nombre}</div>
@@ -267,6 +338,7 @@ function Facturar() {
       <aside className="flex min-h-0 flex-col border-l border-slate-200 bg-white">
         <div className="space-y-2 border-b border-slate-200 px-3.5 py-3">
           {/* comprobante */}
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-slate-400"><span>Comprobante <Tecla>F4</Tecla></span><span>Cliente <Tecla>F3</Tecla></span></div>
           <div className="grid grid-cols-4 gap-1 rounded-lg bg-slate-100 p-0.5">
             {COMPROBANTES.map((c) => (
               <button key={c.tipo} onClick={() => elegirTipo(c.tipo)} title={c.nombre}
@@ -299,7 +371,8 @@ function Facturar() {
           {carrito.map((l) => {
             const d = descDe(l);
             return (
-              <div key={l.p.id} className="group flex items-center gap-2 border-b border-slate-100 px-3.5 py-2">
+              <div key={l.p.id} id={`linea-${l.p.id}`} onClick={() => setActiva(l.p.id)}
+                className={`group flex items-center gap-2 border-b border-slate-100 px-3.5 py-2 ${lineaActiva?.p.id === l.p.id ? 'bg-blue-50/70 shadow-[inset_3px_0_0_var(--color-blue-600)]' : ''}`}>
                 <button onClick={() => setEditarLinea(l.p.id)} className="min-w-0 flex-1 text-left leading-tight">
                   <div className="flex items-center gap-1 truncate text-[13px] font-medium text-slate-900">{l.p.nombre}<PencilSimple size={12} className="shrink-0 text-slate-300 group-hover:text-blue-500" /></div>
                   <div className="num text-[11px] text-slate-500">
@@ -321,7 +394,8 @@ function Facturar() {
             <div className="flex h-full flex-col items-center justify-center px-8 text-center text-slate-400">
               <ShoppingCart size={30} />
               <p className="mt-2 text-[13px] font-medium text-slate-500">El carrito está vacío</p>
-              <p className="text-xs">Escanea un código o toca un producto</p>
+              <p className="text-xs">Escanea, escribe o usa ↑↓ y Enter</p>
+              <p className="mt-3 text-[11px]">Teclas: <Tecla>+</Tecla> <Tecla>−</Tecla> cantidad · <Tecla>Supr</Tecla> quitar · <Tecla>Insert</Tecla> editar · <Tecla>F1</Tecla> todas</p>
             </div>
           )}
         </div>
@@ -332,7 +406,7 @@ function Facturar() {
             <div className="flex justify-between"><dt>Subtotal <span className="text-slate-400">({unidades} art.)</span></dt><dd>{num(resumen.bruto)}</dd></div>
             <div className="flex justify-between">
               <dt className="flex items-center gap-1.5">Descuento
-                <button onClick={() => carrito.length && setDescGlobal(true)} className="rounded border border-slate-200 bg-white px-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50"><Percent size={9} weight="bold" className="inline" /> aplicar</button>
+                <button onClick={() => carrito.length && setDescGlobal(true)} className="rounded border border-slate-200 bg-white px-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50"><Percent size={9} weight="bold" className="inline" /> aplicar · F8</button>
               </dt>
               <dd className={resumen.descuento > 0 ? 'text-emerald-600' : ''}>{resumen.descuento > 0 ? '−' : ''}{num(resumen.descuento)}</dd>
             </div>
@@ -349,6 +423,7 @@ function Facturar() {
 
         {/* pago */}
         <div className="space-y-2 border-t border-slate-200 px-3.5 py-2.5">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-slate-400"><span>Forma de pago <Tecla>F7</Tecla></span>{(metodo === 'efectivo' || metodo === 'tarjeta' || metodo === 'transferencia') && <span>{metodo === 'efectivo' ? 'Recibido' : 'Referencia'} <Tecla>F6</Tecla></span>}</div>
           <div className="grid grid-cols-5 gap-1">
             {METODOS.map(({ id, nombre, Icono }) => (
               <button key={id} onClick={() => { setMetodo(id); setReferencia(''); }}
@@ -361,7 +436,7 @@ function Facturar() {
           {metodo === 'efectivo' && (
             <div className="grid grid-cols-[1fr_auto] items-center gap-2">
               <div className="flex gap-1">
-                <input value={recibido} onChange={(e) => setRecibido(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="Recibido (vacío = exacto)" onKeyDown={(e) => { if (e.key === 'Enter') iniciarCobro(); }}
+                <input ref={campoPago} value={recibido} onChange={(e) => setRecibido(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="Recibido (vacío = exacto)" onKeyDown={(e) => { if (e.key === 'Enter') iniciarCobro(); if (e.key === 'Escape') { e.stopPropagation(); buscador.current?.focus(); } }}
                   className="num h-8 w-full min-w-0 rounded-md border border-slate-300 px-2 text-[13px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10" />
                 {billetes.map((b) => <button key={b} onClick={() => setRecibido(String(b))} className="num h-8 shrink-0 rounded-md border border-slate-200 px-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">{b}</button>)}
               </div>
@@ -372,14 +447,14 @@ function Facturar() {
             </div>
           )}
           {(metodo === 'tarjeta' || metodo === 'transferencia') && (
-            <input value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder={metodo === 'tarjeta' ? 'Nº de aprobación del voucher' : 'Nº de referencia de la transferencia'}
+            <input ref={campoPago} value={referencia} onChange={(e) => setReferencia(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') iniciarCobro(); if (e.key === 'Escape') { e.stopPropagation(); buscador.current?.focus(); } }} placeholder={metodo === 'tarjeta' ? 'Nº de aprobación del voucher' : 'Nº de referencia de la transferencia'}
               className="codigo h-8 w-full rounded-md border border-slate-300 px-2 text-[13px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10" />
           )}
           {metodo === 'credito' && <div className="text-[11px] text-slate-500">{cliente ? `Crédito disponible: ${rd(creditoDisp)}` : 'Elige el cliente al que se le fía'}</div>}
           {metodo === 'mixto' && <div className="text-[11px] text-slate-500">Combina efectivo, tarjeta, transferencia o crédito en la siguiente ventana.</div>}
 
           <div className="grid grid-cols-[auto_1fr] gap-1.5">
-            <Boton tamano="lg" onClick={limpiar} disabled={!carrito.length} title="Vaciar venta" className="px-3"><Trash size={17} /></Boton>
+            <Boton tamano="lg" onClick={limpiar} disabled={!carrito.length} title="Vaciar venta (Ctrl+Supr)" className="px-3"><Trash size={17} /></Boton>
             <button onClick={iniciarCobro} disabled={!carrito.length || preparando || (metodo !== 'mixto' && !!faltaPago)} title={faltaPago ?? undefined}
               className="flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700 disabled:bg-slate-300 disabled:shadow-none">
               {preparando ? <><CircleNotch size={16} className="animate-spin" /> Emitiendo…</>
@@ -391,10 +466,10 @@ function Facturar() {
       </aside>
 
       {cobro && <Cobro totales={cobro.totales} tipo={tipo} cliente={cliente} onCancelar={() => setCobro(null)} onConfirmar={confirmarVenta} />}
-      {ticketId && <Ticket ventaId={ticketId} onCerrar={() => { setTicketId(null); buscador.current?.focus(); }} />}
+      {ticketId && <Ticket ventaId={ticketId} onCerrar={() => { setTicketId(null); setTimeout(() => buscador.current?.focus(), 30); }} />}
       {selCliente && (
         <SelectorCliente actual={cliente} requisito={comp.requisito} onCerrar={() => setSelCliente(false)}
-          onElegir={(c) => { setCliente(c); setSelCliente(false); }} />
+          onElegir={(c) => { setCliente(c); setSelCliente(false); setTimeout(() => buscador.current?.focus(), 30); }} />
       )}
       {lineaEditada && (
         <EditorLinea linea={lineaEditada} tasa={tasaDe(lineaEditada.p)} onCerrar={() => setEditarLinea(null)}

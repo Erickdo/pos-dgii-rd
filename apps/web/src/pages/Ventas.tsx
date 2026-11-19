@@ -51,7 +51,7 @@ export default function Ventas() {
         <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
           <div className="relative min-w-64 flex-1">
             <MagnifyingGlass size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Entrada value={q} onChange={(e) => setQ(e.target.value)} placeholder="e-NCF, cliente, RNC o cédula" className="pl-10" />
+            <Entrada data-buscar value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { setQ(''); e.currentTarget.blur(); } }} placeholder="e-NCF, cliente, RNC o cédula (F2)" className="pl-10" />
           </div>
           <Entrada type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="w-40" />
           <span className="pb-2.5 text-slate-400">—</span>

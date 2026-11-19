@@ -156,7 +156,7 @@ function Usuarios() {
     <TarjetaSolicitudes onCambio={cargar} />
     <Tarjeta>
       <EncabezadoTarjeta titulo="Usuarios y cajeros" descripcion="Cada persona entra con su usuario o correo y su contraseña o PIN"
-        accion={<Boton variante="primario" icono={<Plus size={16} />} onClick={() => setEditar('nuevo')}>Nuevo usuario</Boton>} />
+        accion={<Boton data-atajo="nuevo" title="Alt+N" variante="primario" icono={<Plus size={16} />} onClick={() => setEditar('nuevo')}>Nuevo usuario</Boton>} />
       <Tabla columnas={['Nombre', 'Usuario', 'Rol', 'Último acceso', 'Estado', '']}>
         {lista.map((u) => (
           <tr key={u.id}>

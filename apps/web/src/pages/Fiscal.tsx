@@ -89,7 +89,7 @@ export default function Fiscal() {
             { id: 'aceptados', texto: 'Aceptados', cuenta: c.aceptados }, { id: 'rechazados', texto: 'Rechazados', cuenta: c.rechazados }]} />
           <div className="relative ml-auto w-72">
             <MagnifyingGlass size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Entrada value={q} onChange={(e) => setQ(e.target.value)} placeholder="e-NCF o RNC" className="pl-10" />
+            <Entrada data-buscar value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { setQ(''); e.currentTarget.blur(); } }} placeholder="e-NCF o RNC (F2)" className="pl-10" />
           </div>
         </div>
         <Tabla columnas={['e-NCF', 'Tipo', 'Firmado', 'Comprador', 'Envío', 'Estado', 'Intentos', { t: 'Monto', derecha: true }, '']} vacio="No hay comprobantes">

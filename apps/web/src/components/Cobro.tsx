@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Money, CreditCard, Bank, HandCoins, X, Plus, CheckCircle, Trash } from '@phosphor-icons/react';
 import type { Cliente, MetodoPago, Pago, TipoComprobante, Totales } from '../api';
 import Teclado, { aplicarTecla } from './Teclado';
-import { InsigniaTipo } from './ui';
+import { InsigniaTipo, Tecla } from './ui';
 import { avisar, num, rd } from '../util';
 
 const BILLETES = [100, 200, 500, 1000, 2000];
@@ -72,7 +72,9 @@ export default function Cobro({ totales, tipo, cliente, onCancelar, onConfirmar 
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) { if (e.key === 'Enter') confirmar(); return; }
+      if (e.key === 'F7') { e.preventDefault(); const orden: MetodoPago[] = ['efectivo', 'tarjeta', 'transferencia', 'credito']; setMetodo((m) => orden[(orden.indexOf(m) + 1) % orden.length]); return; }
+      if (e.key === 'Insert' || (e.key === '+' && !(e.target instanceof HTMLInputElement))) { e.preventDefault(); agregarPago(); return; }
+      if (e.target instanceof HTMLInputElement) { if (e.key === 'Enter') confirmar(); if (e.key === 'Escape' && !enviando) onCancelar(); return; }
       if (/^[\d.]$/.test(e.key)) setMonto((m) => aplicarTecla(m, e.key));
       else if (e.key === 'Backspace') setMonto((m) => aplicarTecla(m, '⌫'));
       else if (e.key === 'Enter') confirmar();
@@ -83,7 +85,7 @@ export default function Cobro({ totales, tipo, cliente, onCancelar, onConfirmar 
   });
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+    <div data-modal="" className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
       <div className="animar-entrada grid w-full max-w-4xl grid-cols-[1fr_1.2fr] overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Resumen */}
         <section className="flex flex-col border-r border-slate-200 bg-slate-50 p-6">
@@ -174,13 +176,14 @@ export default function Cobro({ totales, tipo, cliente, onCancelar, onConfirmar 
           <div className="mt-4 grid grid-cols-[auto_1fr] gap-2">
             <button onClick={agregarPago} disabled={!enCurso || !restante}
               className="flex h-14 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40">
-              <Plus size={18} weight="bold" /> Pago mixto
+              <Plus size={18} weight="bold" /> Pago mixto <Tecla>Insert</Tecla>
             </button>
             <button onClick={confirmar} disabled={!listo || enviando}
               className="flex h-14 items-center justify-center gap-2 rounded-xl bg-emerald-500 text-lg font-bold text-white shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-600 disabled:opacity-40 disabled:shadow-none">
-              <CheckCircle size={24} weight="fill" /> {enviando ? 'Emitiendo e-CF…' : 'Confirmar pago'}
+              <CheckCircle size={24} weight="fill" /> {enviando ? 'Emitiendo e-CF…' : 'Confirmar pago'} <Tecla oscura>Enter</Tecla>
             </button>
           </div>
+          <p className="mt-2 text-center text-[11px] text-slate-400">Escribe el monto con el teclado · <Tecla>F7</Tecla> forma de pago · <Tecla>Insert</Tecla> agregar pago · <Tecla>Esc</Tecla> cancelar</p>
         </section>
       </div>
     </div>

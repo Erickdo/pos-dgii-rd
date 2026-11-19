@@ -31,7 +31,7 @@ export default function Clientes() {
   return (
     <>
       <EncabezadoPagina titulo="Clientes" descripcion="Directorio con RNC y cédulas validadas para emitir E31, E44 y E45. Crédito y cuentas por cobrar."
-        acciones={<Boton variante="primario" icono={<UserPlus size={18} />} onClick={() => setNuevo(true)}>Nuevo cliente</Boton>} />
+        acciones={<Boton data-atajo="nuevo" title="Alt+N" variante="primario" icono={<UserPlus size={18} />} onClick={() => setNuevo(true)}>Nuevo cliente</Boton>} />
       <div className="mb-6 grid gap-4 md:grid-cols-4">
         <KPI titulo="Clientes registrados" valor={lista.length} icono={<Users size={20} />} tono="blue" />
         <KPI titulo="Contribuyentes (E31)" valor={lista.filter((c) => c.es_contribuyente).length} icono={<Buildings size={20} />} />
@@ -42,7 +42,7 @@ export default function Clientes() {
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4">
           <div className="relative max-w-sm flex-1">
             <MagnifyingGlass size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Entrada value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre, RNC o cédula" className="pl-10" />
+            <Entrada data-buscar value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { setQ(''); e.currentTarget.blur(); } }} placeholder="Nombre, RNC o cédula (F2)" className="pl-10" />
           </div>
           <Pestanas valor={filtro} onChange={setFiltro} opciones={[{ id: 'todos', texto: 'Todos' }, { id: 'contribuyentes', texto: 'Contribuyentes' }, { id: 'credito', texto: 'Crédito' }]} />
         </div>

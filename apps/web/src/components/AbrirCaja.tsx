@@ -3,7 +3,7 @@ import { CashRegister, Lock } from '@phosphor-icons/react';
 import { api, ApiError } from '../api';
 import { useApp } from '../contexto';
 import Teclado, { aplicarTecla } from './Teclado';
-import { Boton, Tarjeta } from './ui';
+import { Boton, Tarjeta, Tecla } from './ui';
 import { avisar, rd } from '../util';
 
 interface Terminal { id: string; codigo: string; descripcion: string | null; sucursal: string; ocupada: boolean }
@@ -19,6 +19,28 @@ export default function AbrirCaja({ mensaje }: { mensaje?: string }) {
   useEffect(() => {
     api<Terminal[]>('/terminales').then((t) => { setTerminales(t); setTerminal(t.find((x) => !x.ocupada)?.id ?? ''); });
   }, []);
+
+  // Teclado físico: números para el fondo, ↑↓ para la terminal, Enter para abrir
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (document.querySelector('[data-modal]')) return;
+      const t = e.target as HTMLElement;
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return;
+      if (/^[\d.]$/.test(e.key)) { e.preventDefault(); setMonto((m) => aplicarTecla(m, e.key)); }
+      else if (e.key === 'Backspace') { e.preventDefault(); setMonto((m) => aplicarTecla(m, '⌫')); }
+      else if (e.key === 'Delete') { e.preventDefault(); setMonto(''); }
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const libres = terminales.filter((x) => !x.ocupada);
+        const i = libres.findIndex((x) => x.id === terminal);
+        const n = libres[(i + (e.key === 'ArrowDown' ? 1 : -1) + libres.length) % libres.length];
+        if (n) setTerminal(n.id);
+      }
+      else if (e.key === 'Enter' && terminal && !enviando) { e.preventDefault(); abrir(); }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  });
 
   async function abrir() {
     setEnviando(true);
@@ -51,7 +73,8 @@ export default function AbrirCaja({ mensaje }: { mensaje?: string }) {
         <div className="text-xs font-medium text-slate-500">Fondo inicial en efectivo</div>
         <div className="num mb-3 text-2xl font-bold">{rd(monto || 0)}</div>
         <Teclado decimal compacto onTecla={(t) => setMonto((m) => aplicarTecla(m, t))} />
-        <Boton variante="primario" tamano="lg" className="mt-3 w-full" cargando={enviando} disabled={!terminal} onClick={abrir}>Abrir caja</Boton>
+        <Boton variante="primario" tamano="lg" className="mt-3 w-full" cargando={enviando} disabled={!terminal} onClick={abrir}>Abrir caja <Tecla oscura>Enter</Tecla></Boton>
+        <p className="mt-2 text-center text-[11px] text-slate-400">Escribe el monto con el teclado · <Tecla>↑</Tecla><Tecla>↓</Tecla> terminal · <Tecla>Supr</Tecla> borrar</p>
       </div>
     </Tarjeta>
   );

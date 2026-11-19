@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react';
+import { useEffect, useRef, type KeyboardEvent as KeyEv, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react';
 import { X, CircleNotch } from '@phosphor-icons/react';
 
 // ---------------------------------------------------------------- botones
@@ -15,7 +15,7 @@ const TAMANOS = { sm: 'h-7 px-2.5 text-xs gap-1 rounded-md', md: 'h-9 px-3.5 tex
 export function Boton({ variante = 'secundario', tamano = 'md', cargando, icono, children, className = '', ...p }:
   ButtonHTMLAttributes<HTMLButtonElement> & { variante?: Variante; tamano?: keyof typeof TAMANOS; cargando?: boolean; icono?: ReactNode }) {
   return (
-    <button {...p} disabled={p.disabled || cargando}
+    <button {...p} disabled={p.disabled || cargando} data-principal={variante === 'primario' || variante === 'exito' || variante === 'peligro' ? '' : undefined}
       className={`inline-flex items-center justify-center font-semibold transition-colors disabled:opacity-45 ${VARIANTES[variante]} ${TAMANOS[tamano]} ${className}`}>
       {cargando ? <CircleNotch size={16} className="animate-spin" /> : icono}
       {children}
@@ -119,37 +119,100 @@ export const InsigniaTipo = ({ tipo }: { tipo: string }) => (
 );
 
 // ---------------------------------------------------------------- modal
+const ENFOCABLES = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+/** ¿Es esta la ventana de más arriba? (con ventanas una sobre otra, solo la de arriba responde al teclado) */
+export const esLaDeArriba = (el: Element | null) => { const t = document.querySelectorAll('[data-modal]'); return !!el && t[t.length - 1] === el; };
+
+/**
+ * Ventana modal manejable con teclado:
+ *  - Al abrir enfoca el primer campo (o el botón principal si no hay campos).
+ *  - Enter en un campo ejecuta el botón principal del pie (Guardar, Aplicar, Confirmar…).
+ *  - Tab y Shift+Tab recorren solo los controles de la ventana.
+ *  - Escape cierra solo la ventana de más arriba.
+ */
 export function Modal({ titulo, descripcion, onCerrar, children, ancho = 'max-w-lg', pie }: {
   titulo: string; descripcion?: string; onCerrar: () => void; children: ReactNode; ancho?: string; pie?: ReactNode;
 }) {
+  const raiz = useRef<HTMLDivElement>(null);
+  const cuerpo = useRef<HTMLDivElement>(null);
+  const piePanel = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && esLaDeArriba(raiz.current)) { e.preventDefault(); e.stopImmediatePropagation(); onCerrar(); } };
+    window.addEventListener('keydown', h, true);
+    return () => window.removeEventListener('keydown', h, true);
   }, [onCerrar]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (raiz.current?.contains(document.activeElement)) return;
+      const campo = cuerpo.current?.querySelector<HTMLElement>('input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled])');
+      const principal = [...(piePanel.current?.querySelectorAll<HTMLButtonElement>('[data-principal]:not(:disabled)') ?? [])].pop();
+      (campo ?? principal ?? raiz.current?.querySelector<HTMLElement>(ENFOCABLES))?.focus();
+    }, 30);
+    return () => clearTimeout(t);
+  }, []);
+
+  function teclas(e: KeyEv<HTMLDivElement>) {
+    if (!esLaDeArriba(raiz.current)) return;
+    const t = e.target as HTMLElement;
+    if (e.key === 'Enter' && !e.defaultPrevented && !e.shiftKey && !e.nativeEvent.isComposing) {
+      if (t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON' || t.tagName === 'A' || t.closest('form')) return;
+      const principal = [...(piePanel.current?.querySelectorAll<HTMLButtonElement>('[data-principal]:not(:disabled)') ?? [])].pop();
+      if (principal) { e.preventDefault(); principal.click(); }
+    }
+    if (e.key === 'Tab') {
+      const lista = [...(raiz.current?.querySelectorAll<HTMLElement>(ENFOCABLES) ?? [])].filter((x) => x.offsetParent !== null);
+      if (!lista.length) return;
+      const i = lista.indexOf(document.activeElement as HTMLElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); lista[lista.length - 1].focus(); }
+      else if (!e.shiftKey && i === lista.length - 1) { e.preventDefault(); lista[0].focus(); }
+    }
+  }
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-[2px]" onMouseDown={onCerrar}>
+    <div ref={raiz} data-modal="" role="dialog" aria-modal="true" aria-label={titulo} onKeyDown={teclas}
+      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-[2px]" onMouseDown={onCerrar}>
       <div onMouseDown={(e) => e.stopPropagation()} className={`animar-entrada flex max-h-[92vh] w-full ${ancho} flex-col overflow-hidden rounded-xl bg-white text-left shadow-2xl`}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-3">
           <div>
             <h2 className="text-base font-semibold text-slate-900">{titulo}</h2>
             {descripcion && <p className="text-xs text-slate-500">{descripcion}</p>}
           </div>
-          <button onClick={onCerrar} className="grid size-7 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"><X size={18} /></button>
+          <button onClick={onCerrar} tabIndex={-1} title="Cerrar (Esc)" className="grid size-7 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"><X size={18} /></button>
         </div>
-        <div className="scroll-fino min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {pie && <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-2.5">{pie}</div>}
+        <div ref={cuerpo} className="scroll-fino min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        {pie && (
+          <div ref={piePanel} className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-2.5">
+            <span className="mr-auto hidden text-[11px] text-slate-400 sm:inline"><Tecla>Enter</Tecla> confirmar · <Tecla>Esc</Tecla> cerrar</span>
+            {pie}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
+/** Indicador de tecla, para mostrar atajos junto a los botones. */
+export const Tecla = ({ children, oscura }: { children: ReactNode; oscura?: boolean }) => (
+  <kbd className={`inline-flex h-4 min-w-4 items-center justify-center rounded px-1 font-sans text-[10px] font-semibold leading-none ${oscura ? 'bg-white/20 text-white' : 'border border-slate-200 bg-white text-slate-500'}`}>{children}</kbd>
+);
+
 // ---------------------------------------------------------------- pestañas
 export function Pestanas<T extends string>({ opciones, valor, onChange }: { opciones: { id: T; texto: string; cuenta?: number }[]; valor: T; onChange: (v: T) => void }) {
   return (
-    <div className="inline-flex rounded-lg bg-slate-100 p-1">
+    <div role="tablist" className="inline-flex rounded-lg bg-slate-100 p-1"
+      onKeyDown={(e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        const caja = e.currentTarget;
+        const i = opciones.findIndex((o) => o.id === valor);
+        const n = opciones[(i + (e.key === 'ArrowRight' ? 1 : -1) + opciones.length) % opciones.length];
+        onChange(n.id);
+        setTimeout(() => caja.querySelector<HTMLElement>('[aria-selected=true]')?.focus(), 0);
+      }}>
       {opciones.map((o) => (
-        <button key={o.id} onClick={() => onChange(o.id)}
+        <button key={o.id} role="tab" aria-selected={valor === o.id} tabIndex={valor === o.id ? 0 : -1} onClick={() => onChange(o.id)}
           className={`flex h-7 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition ${valor === o.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
           {o.texto}
           {o.cuenta !== undefined && <span className={`num rounded px-1.5 text-xs ${valor === o.id ? 'bg-slate-100' : 'bg-slate-200/70'}`}>{o.cuenta}</span>}

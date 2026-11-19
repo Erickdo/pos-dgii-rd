@@ -1,7 +1,21 @@
 {
-  "version": "2.4.2",
+  "version": "2.5.0",
   "fecha": "2026-11-18",
   "historial": [
+    {
+      "version": "2.5.0",
+      "fecha": "2026-11-19",
+      "titulo": "Todo el sistema con el teclado",
+      "cambios": [
+        "F1 muestra todos los atajos. Alt+1…8 cambia de módulo, F2 va al buscador, Alt+N crea algo nuevo y Alt+Q cierra la sesión",
+        "En todas las ventanas: Enter confirma, Esc cierra y Tab recorre solo esa ventana",
+        "Punto de Venta: flechas y Enter para agregar, 3* para la cantidad, + − Supr Insert sobre la línea marcada, RePág/AvPág para las categorías",
+        "F3 cliente, F4 comprobante, F6 efectivo recibido o referencia, F7 forma de pago, F8 descuento, F9 cobrar, Ctrl+Supr vaciar la venta",
+        "Abrir caja con el teclado numérico; ticket: Enter para nueva venta y P para imprimir; cobro mixto con F7 e Insert",
+        "Selector de cliente con flechas y Enter, F2 para registrar uno nuevo",
+        "Anillo azul que muestra dónde está el foco al navegar con Tab"
+      ]
+    },
     {
       "version": "2.4.2",
       "fecha": "2026-11-19",

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, MagnifyingGlass, PencilSimple, Package, Warning, Coins, Truck, Trash, ClockCounterClockwise, Tag, Archive, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { api, ApiError } from '../api';
-import { Boton, Campo, Celda, EncabezadoPagina, EncabezadoTarjeta, Entrada, Insignia, Interruptor, KPI, Modal, Pestanas, Selector, Tabla, Tarjeta } from '../components/ui';
+import { Boton, Campo, Celda, EncabezadoPagina, EncabezadoTarjeta, Entrada, Insignia, Interruptor, KPI, Modal, Pestanas, Selector, Tabla, Tarjeta, Tecla } from '../components/ui';
 import { avisar, num, rd } from '../util';
 
 interface ProductoAdmin {
@@ -83,7 +83,7 @@ function Productos({ productos, categorias, recargar }: { productos: ProductoAdm
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
         <div className="relative w-full max-w-xs">
           <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Entrada value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre, código o código de barras" className="pl-9" />
+          <Entrada data-buscar value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { setQ(''); e.currentTarget.blur(); } }} placeholder="Nombre, código o código de barras (F2)" className="pl-9" />
         </div>
         <Selector value={cat} onChange={(e) => setCat(e.target.value)} className="w-44">
           <option value="">Todas las categorías</option>
@@ -92,7 +92,7 @@ function Productos({ productos, categorias, recargar }: { productos: ProductoAdm
         </Selector>
         <Pestanas valor={estado} onChange={setEstado} opciones={[
           { id: 'activos', texto: 'Activos' }, { id: 'inactivos', texto: 'Inactivos', cuenta: productos.filter((p) => !p.activo).length }, { id: 'todos', texto: 'Todos' }]} />
-        <Boton variante="primario" className="ml-auto" icono={<Plus size={16} weight="bold" />} onClick={() => setEditar('nuevo')}>Nuevo producto</Boton>
+        <Boton data-atajo="nuevo" title="Alt+N" variante="primario" className="ml-auto" icono={<Plus size={16} weight="bold" />} onClick={() => setEditar('nuevo')}>Nuevo producto <Tecla oscura>Alt+N</Tecla></Boton>
       </div>
       <Tabla columnas={['Código', 'Producto', 'Categoría', 'Impuesto', { t: 'Costo', derecha: true }, { t: 'Precio final', derecha: true }, { t: 'Margen', derecha: true }, { t: 'Stock', derecha: true }, { t: 'Acciones', derecha: true }]}
         vacio={estado === 'inactivos' ? 'No hay productos inactivos' : 'No hay productos que coincidan'}>
@@ -255,7 +255,7 @@ function Compras({ productos, recargar }: { productos: ProductoAdmin[]; recargar
   useEffect(() => { cargar(); }, []);
   return (
     <Tarjeta>
-      <EncabezadoTarjeta titulo="Compras a proveedores" descripcion="Cada compra suma existencias y actualiza el último costo" accion={<Boton variante="primario" icono={<Truck size={16} />} onClick={() => setNueva(true)}>Registrar compra</Boton>} />
+      <EncabezadoTarjeta titulo="Compras a proveedores" descripcion="Cada compra suma existencias y actualiza el último costo" accion={<Boton data-atajo="nuevo" title="Alt+N" variante="primario" icono={<Truck size={16} />} onClick={() => setNueva(true)}>Registrar compra</Boton>} />
       <Tabla columnas={['Fecha', 'Proveedor', 'NCF proveedor', 'Líneas', 'Registró', { t: 'Monto', derecha: true }, { t: 'ITBIS', derecha: true }, { t: 'Total', derecha: true }]} vacio="Aún no hay compras registradas">
         {compras.map((c) => (
           <tr key={c.id}>
@@ -447,7 +447,7 @@ function Categorias({ categorias, recargar }: { categorias: Categoria[]; recarga
   return (
     <Tarjeta className="max-w-3xl">
       <div className="flex gap-2 border-b border-slate-100 p-3">
-        <Entrada value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nueva categoría (ej.: Postres)" maxLength={60} onKeyDown={(e) => e.key === 'Enter' && nombre.trim().length > 1 && crear()} />
+        <Entrada data-buscar value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nueva categoría (ej.: Postres) · F2" maxLength={60} onKeyDown={(e) => e.key === 'Enter' && nombre.trim().length > 1 && crear()} />
         <Boton variante="primario" disabled={nombre.trim().length < 2} onClick={crear} icono={<Plus size={15} weight="bold" />}>Agregar</Boton>
       </div>
       <Tabla columnas={['Categoría', { t: 'Productos', derecha: true }, { t: 'Activos', derecha: true }, { t: 'Acciones', derecha: true }]} vacio="Aún no hay categorías">
